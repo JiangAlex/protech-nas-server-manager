@@ -9,10 +9,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- OTA API 供 NAS 設備主動檢查/拉取更新
-  - `POST /api/ota/check` — 設備檢查是否有新版本
-  - `GET /api/ota/download/{device_id}` — 取得更新下載資訊與執行指令
-  - `POST /api/ota/report` — 設備回報更新結果（成功/失敗/rollback）
+- OTA 路由分離：NAS OTA 與 ESP32 OTA 獨立路由
+  - `POST /api/ota/nas/check` — NAS 設備檢查新版本
+  - `GET /api/ota/nas/download/{device_id}` — 取得 systemd 更新指令
+  - `GET /api/ota/nas/artifacts/{version}/frontend.tar.gz` — 下載預建 frontend
+  - `POST /api/ota/nas/artifacts/{version}/upload` — 上傳 frontend artifact
+  - `POST /api/ota/nas/report` — NAS 回報更新結果
+  - `GET /api/ota/esp32/check` — ESP32 檢查韌體（placeholder）
+  - `GET /api/ota/esp32/firmware/{version}` — 下載 firmware.bin（placeholder）
+  - `POST /api/ota/esp32/report` — ESP32 回報結果（placeholder）
+- Device model 新增 `deploy_mode` 欄位（預設 `systemd`）
+- FirmwareVersion model 新增 `frontend_artifact_path`、`frontend_checksum` 欄位
+- Artifact storage service（上傳/下載/校驗 frontend.tar.gz）
+- Alembic migration 002
+
+### Removed
+- 舊的統一 `/api/ota/*` 路由（已被 NAS/ESP32 分離路由取代）
 
 ---
 

@@ -1,6 +1,7 @@
-"""OTA service logic.
+"""NAS OTA service logic.
 
-Handles update checking, download info generation, and report processing.
+Handles update checking, download info with systemd instructions,
+frontend artifact info, and report processing.
 """
 
 from datetime import datetime, timezone
@@ -13,35 +14,37 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.device import Device
 from app.models.firmware import FirmwareVersion
 from app.models.update_log import UpdateLog
-from app.schemas.ota import (
-    OTACheckRequest,
-    OTACheckResponse,
-    OTADownloadInfo,
-    OTAReportRequest,
-    OTAReportResponse,
+from app.schemas.ota_nas import (
+    NASCheckRequest,
+    NASCheckResponse,
+    NASDownloadInfo,
+    NASReportRequest,
+    NASReportResponse,
 )
+from app.services import artifact_service
 
 logger = structlog.get_logger()
 
 
-async def check_update(db: AsyncSession, request: OTACheckRequest) -> OTACheckResponse:
-    """Check if an update is available for the device."""
+async def check_update(db: AsyncSession, request: NASCheckRequest) -> NASCheckResponse:
+    """Check if an update is available for the NAS device."""
 
-    # Get device info
     device = await db.get(Device, request.device_id)
     if not device:
-        return OTACheckResponse(
+        return NASCheckResponse(
             update_available=False,
             current_version=request.current_version,
         )
 
-    # Update device's last seen time
+    # Update device status
     device.last_seen_at = datetime.now(timezone.utc)
+    device.status = "online"
     if request.current_version:
         device.current_version = request.current_version
     if request.current_git_hash:
         device.current_git_hash = request.current_git_hash
-    device.status = "online"
+    if request.deploy_mode:
+        device.deploy_mode = request.deploy_mode
 
     # Find latest stable firmware for this device type
     result = await db.execute(
@@ -58,7 +61,7 @@ async def check_update(db: AsyncSession, request: OTACheckRequest) -> OTACheckRe
     latest_firmware = result.scalar_one_or_none()
 
     if not latest_firmware:
-        return OTACheckResponse(
+        return NASCheckResponse(
             update_available=False,
             current_version=request.current_version,
         )
@@ -66,29 +69,31 @@ async def check_update(db: AsyncSession, request: OTACheckRequest) -> OTACheckRe
     # Compare versions
     current = request.current_version or device.current_version
     if current == latest_firmware.version:
-        return OTACheckResponse(
+        return NASCheckResponse(
             update_available=False,
             current_version=current,
             latest_version=latest_firmware.version,
         )
 
-    # Update available
-    base_url = f"/api/ota/download/{device.id}"
-    return OTACheckResponse(
+    # Build frontend artifact URL if available
+    frontend_url = None
+    if artifact_service.artifact_exists(latest_firmware.version):
+        frontend_url = f"/api/ota/nas/artifacts/{latest_firmware.version}/frontend.tar.gz"
+
+    return NASCheckResponse(
         update_available=True,
         current_version=current,
         latest_version=latest_firmware.version,
         latest_git_hash=latest_firmware.git_hash,
         changelog=latest_firmware.changelog,
-        download_url=base_url,
-        file_size=latest_firmware.file_size,
-        file_checksum=latest_firmware.file_checksum,
+        download_url=f"/api/ota/nas/download/{device.id}",
+        frontend_artifact_url=frontend_url,
         released_at=latest_firmware.released_at,
     )
 
 
-async def get_download_info(db: AsyncSession, device_id: int) -> Optional[OTADownloadInfo]:
-    """Get download/update instructions for a device."""
+async def get_download_info(db: AsyncSession, device_id: int) -> Optional[NASDownloadInfo]:
+    """Get download/update instructions for a NAS device (systemd mode)."""
 
     device = await db.get(Device, device_id)
     if not device:
@@ -111,32 +116,46 @@ async def get_download_info(db: AsyncSession, device_id: int) -> Optional[OTADow
     if not latest_firmware:
         return None
 
-    # Build update instructions based on device type config
-    instructions = None
-    if latest_firmware.git_repo_url:
-        instructions = (
-            f"cd /app && git fetch origin {latest_firmware.git_branch or 'main'} && "
-            f"git checkout {latest_firmware.git_hash or latest_firmware.git_branch or 'main'} && "
-            f"docker compose up -d --build"
+    # Build systemd update instructions
+    git_branch = latest_firmware.git_branch or "main"
+    git_hash = latest_firmware.git_hash or git_branch
+
+    instructions = (
+        f"cd /opt/protech-nas && "
+        f"git fetch origin {git_branch} && "
+        f"git checkout {git_hash} && "
+        f"cd backend && source .venv/bin/activate && "
+        f"pip install -r requirements.txt && "
+        f"sudo systemctl restart protech-nas"
+    )
+
+    # Frontend artifact info
+    frontend_url = None
+    frontend_checksum = None
+    if artifact_service.artifact_exists(latest_firmware.version):
+        frontend_url = f"/api/ota/nas/artifacts/{latest_firmware.version}/frontend.tar.gz"
+        frontend_checksum = latest_firmware.frontend_checksum or artifact_service.get_artifact_checksum(
+            latest_firmware.version
         )
 
-    return OTADownloadInfo(
+    return NASDownloadInfo(
         version=latest_firmware.version,
         git_hash=latest_firmware.git_hash,
         git_repo_url=latest_firmware.git_repo_url,
-        git_branch=latest_firmware.git_branch,
-        file_url=latest_firmware.file_path,
-        file_checksum=latest_firmware.file_checksum,
+        git_branch=git_branch,
+        deploy_mode=device.deploy_mode,
+        frontend_artifact_url=frontend_url,
+        frontend_checksum=frontend_checksum,
         instructions=instructions,
     )
 
 
-async def report_update(db: AsyncSession, request: OTAReportRequest) -> OTAReportResponse:
-    """Process update report from device."""
+async def report_update(db: AsyncSession, request: NASReportRequest) -> NASReportResponse:
+    """Process update report from NAS device."""
 
     device = await db.get(Device, request.device_id)
     if not device:
-        return OTAReportResponse(success=False, message="Device not found")
+        return NASReportResponse(success=False, message="Device not found")
 
     # Update device info
     device.last_seen_at = datetime.now(timezone.utc)
@@ -162,14 +181,14 @@ async def report_update(db: AsyncSession, request: OTAReportRequest) -> OTARepor
     db.add(update_log)
 
     logger.info(
-        "ota_report_received",
+        "nas_ota_report",
         device_id=request.device_id,
         device_name=device.name,
         status=request.status,
         to_version=request.to_version,
     )
 
-    return OTAReportResponse(
+    return NASReportResponse(
         success=True,
         message=f"Update report recorded: {request.status}",
     )

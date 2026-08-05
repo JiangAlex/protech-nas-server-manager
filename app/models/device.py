@@ -63,6 +63,7 @@ class Device(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
     status: Mapped[str] = mapped_column(String(20), default="unknown", nullable=False)
+    deploy_mode: Mapped[str] = mapped_column(String(20), default="systemd", nullable=False)
     config: Mapped[Optional[dict]] = mapped_column(JSONB, default=dict)
 
     # Relationships

@@ -31,6 +31,8 @@ class FirmwareVersion(Base, TimestampMixin):
     file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     file_size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     file_checksum: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    frontend_artifact_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    frontend_checksum: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     # Git info
     git_repo_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)

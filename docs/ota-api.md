@@ -9,20 +9,20 @@ NAS 設備主動連回 Server 檢查更新、取得下載資訊、回報更新�
 │  NAS 設備    │                          │  Server (:8060)  │
 └──────┬──────┘                          └────────┬─────────┘
        │                                          │
-       │  1. POST /api/ota/check                  │
+       │  1. POST /api/ota/nas/check                  │
        │  {device_id, current_version}            │
        │─────────────────────────────────────────→│
        │                                          │
        │  回應：是否有新版本                        │
        │←─────────────────────────────────────────│
        │                                          │
-       │  2. GET /api/ota/download/{device_id}    │
+       │  2. GET /api/ota/nas/download/{device_id}    │
        │─────────────────────────────────────────→│
        │                                          │
        │  回應：git repo / branch / 執行指令       │
        │←─────────────────────────────────────────│
        │                                          │
-       │  3. GET /api/ota/artifacts/{version}/     │
+       │  3. GET /api/ota/nas/artifacts/{version}/     │
        │     frontend.tar.gz                      │
        │─────────────────────────────────────────→│
        │                                          │
@@ -31,7 +31,7 @@ NAS 設備主動連回 Server 檢查更新、取得下載資訊、回報更新�
        │                                          │
        │  (NAS 執行更新...)                        │
        │                                          │
-       │  4. POST /api/ota/report                 │
+       │  4. POST /api/ota/nas/report                 │
        │  {device_id, to_version, status}         │
        │─────────────────────────────────────────→│
        │                                          │
@@ -63,7 +63,7 @@ NAS 設備**不需要安裝 Node.js**，只需下載預建好的 `frontend.tar.g
 
 ### 1. 檢查更新
 
-**`POST /api/ota/check`**
+**`POST /api/ota/nas/check`**
 
 NAS 設備傳送目前版本資訊，Server 比對最新版本回應是否需要更新。
 
@@ -96,8 +96,8 @@ NAS 設備傳送目前版本資訊，Server 比對最新版本回應是否需要
   "latest_version": "1.1.0",
   "latest_git_hash": "def5678e",
   "changelog": "修正 XXX 問題，新增 YYY 功能",
-  "download_url": "/api/ota/download/1",
-  "frontend_artifact_url": "/api/ota/artifacts/1.1.0/frontend.tar.gz",
+  "download_url": "/api/ota/nas/download/1",
+  "frontend_artifact_url": "/api/ota/nas/artifacts/1.1.0/frontend.tar.gz",
   "released_at": "2026-08-05T10:00:00Z"
 }
 ```
@@ -121,7 +121,7 @@ NAS 設備傳送目前版本資訊，Server 比對最新版本回應是否需要
 
 ### 2. 取得更新資訊
 
-**`GET /api/ota/download/{device_id}`**
+**`GET /api/ota/nas/download/{device_id}`**
 
 取得更新的詳細下載/執行資訊。Server 根據設備的 `deploy_mode` 回傳對應的 `instructions`。
 
@@ -134,7 +134,7 @@ NAS 設備傳送目前版本資訊，Server 比對最新版本回應是否需要
   "git_repo_url": "https://github.com/JiangAlex/protech-nas.git",
   "git_branch": "main",
   "deploy_mode": "systemd",
-  "frontend_artifact_url": "/api/ota/artifacts/1.1.0/frontend.tar.gz",
+  "frontend_artifact_url": "/api/ota/nas/artifacts/1.1.0/frontend.tar.gz",
   "frontend_checksum": "sha256:abc123...",
   "instructions": "cd /opt/protech-nas && git fetch origin main && git checkout def5678e && cd backend && source .venv/bin/activate && pip install -r requirements.txt && sudo systemctl restart protech-nas"
 }
@@ -183,7 +183,7 @@ Status: `404`
 
 ### 3. 下載 Frontend Artifact
 
-**`GET /api/ota/artifacts/{version}/frontend.tar.gz`**
+**`GET /api/ota/nas/artifacts/{version}/frontend.tar.gz`**
 
 下載 Server 端預先建置好的 frontend 靜態檔壓縮包。
 
@@ -209,7 +209,7 @@ frontend.tar.gz
 
 ### 4. 回報更新結果
 
-**`POST /api/ota/report`**
+**`POST /api/ota/nas/report`**
 
 NAS 設備完成更新（或失敗）後回報結果。
 
@@ -275,7 +275,7 @@ CURRENT_VERSION=$(cat "$APP_DIR/VERSION" 2>/dev/null || echo "unknown")
 CURRENT_HASH=$(cd "$APP_DIR" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 # 1. 檢查更新
-RESPONSE=$(curl -s -X POST "$SERVER_URL/api/ota/check" \
+RESPONSE=$(curl -s -X POST "$SERVER_URL/api/ota/nas/check" \
   -H "Content-Type: application/json" \
   -d "{
     \"device_id\": $DEVICE_ID,
@@ -295,7 +295,7 @@ LATEST_VERSION=$(echo "$RESPONSE" | jq -r '.latest_version')
 echo "發現新版本: $LATEST_VERSION"
 
 # 2. 取得更新資訊
-DOWNLOAD_INFO=$(curl -s "$SERVER_URL/api/ota/download/$DEVICE_ID")
+DOWNLOAD_INFO=$(curl -s "$SERVER_URL/api/ota/nas/download/$DEVICE_ID")
 TARGET_HASH=$(echo "$DOWNLOAD_INFO" | jq -r '.git_hash')
 FRONTEND_URL=$(echo "$DOWNLOAD_INFO" | jq -r '.frontend_artifact_url')
 FRONTEND_CHECKSUM=$(echo "$DOWNLOAD_INFO" | jq -r '.frontend_checksum')
@@ -377,7 +377,7 @@ fi
 sudo rm -rf "${WEB_DIR}.bak" 2>/dev/null
 
 # 8. 回報結果
-curl -s -X POST "$SERVER_URL/api/ota/report" \
+curl -s -X POST "$SERVER_URL/api/ota/nas/report" \
   -H "Content-Type: application/json" \
   -d "{
     \"device_id\": $DEVICE_ID,
@@ -413,7 +413,7 @@ CURRENT_VERSION=$(cat "$APP_DIR/VERSION" 2>/dev/null || echo "unknown")
 CURRENT_HASH=$(cd "$APP_DIR" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 # 1. 檢查更新
-RESPONSE=$(curl -s -X POST "$SERVER_URL/api/ota/check" \
+RESPONSE=$(curl -s -X POST "$SERVER_URL/api/ota/nas/check" \
   -H "Content-Type: application/json" \
   -d "{
     \"device_id\": $DEVICE_ID,
@@ -433,7 +433,7 @@ LATEST_VERSION=$(echo "$RESPONSE" | jq -r '.latest_version')
 echo "發現新版本: $LATEST_VERSION"
 
 # 2. 取得更新指令
-DOWNLOAD_INFO=$(curl -s "$SERVER_URL/api/ota/download/$DEVICE_ID")
+DOWNLOAD_INFO=$(curl -s "$SERVER_URL/api/ota/nas/download/$DEVICE_ID")
 TARGET_HASH=$(echo "$DOWNLOAD_INFO" | jq -r '.git_hash')
 
 # 3. 記錄目前版本（方便回滾）
@@ -445,7 +445,7 @@ cd "$APP_DIR"
 
 # 拉取新版本
 git fetch origin main && git checkout "$TARGET_HASH" || {
-  curl -s -X POST "$SERVER_URL/api/ota/report" \
+  curl -s -X POST "$SERVER_URL/api/ota/nas/report" \
     -H "Content-Type: application/json" \
     -d "{\"device_id\":$DEVICE_ID,\"to_version\":\"$LATEST_VERSION\",\"status\":\"failed\",\"error_message\":\"git checkout failed\"}"
   exit 1
@@ -480,7 +480,7 @@ if [ "$STATUS" = "failed" ]; then
 fi
 
 # 6. 回報結果
-curl -s -X POST "$SERVER_URL/api/ota/report" \
+curl -s -X POST "$SERVER_URL/api/ota/nas/report" \
   -H "Content-Type: application/json" \
   -d "{
     \"device_id\": $DEVICE_ID,
@@ -508,6 +508,23 @@ echo "更新結果: $STATUS"
 | 系統整合 | 直接存取 smartctl/mdadm/iptables | 需 privileged + volume mount |
 | 適用硬體 | Atom D2550 / 4GB RAM ✅ | 建議 8GB+ RAM |
 | 環境隔離 | 依賴 .venv | 完全隔離 |
+
+---
+
+---
+
+## ESP32 OTA API（Placeholder）
+
+ESP32 使用獨立的路由，以 firmware binary 為主。
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/api/ota/esp32/check?mac=XX:XX&version=1.0` | ESP32 檢查新韌體 |
+| GET | `/api/ota/esp32/firmware/{version}` | 下載 firmware.bin |
+| POST | `/api/ota/esp32/report` | 回報更新結果 |
+
+> 目前為 placeholder 實作，回傳 `update_available: false` 或 `501 Not Implemented`。
+> 待 ESP32 硬體 ready 後再完整實作。
 
 ---
 
@@ -608,7 +625,7 @@ sudo rm -rf /var/www/protech-nas-v0.9.0/
 加入 `X-Device-Token` header 認證，每台設備有獨立的 token：
 
 ```
-POST /api/ota/check
+POST /api/ota/nas/check
 X-Device-Token: <device-specific-token>
 ```
 
