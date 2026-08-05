@@ -13,41 +13,13 @@ services:
       - "8000:8000"
     env_file:
       - .env
-    depends_on:
-      postgresql:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Docker API access
     restart: unless-stopped
     networks:
       - nas-manager-network
-
-  # ============================================================
-  # PostgreSQL - 設備資訊、更新記錄、系統設定
-  # ============================================================
-  postgresql:
-    image: postgres:16-alpine
-    container_name: nas-manager-db
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-nas_manager}
-      POSTGRES_USER: ${POSTGRES_USER:-nas_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nas_password}
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nas_user}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks:
-      - nas-manager-network
-
-volumes:
-  postgres_data:
-    driver: local
 
 networks:
   nas-manager-network:
