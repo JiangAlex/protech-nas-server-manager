@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-RUN pip install --no-cache-dir hatchling
 COPY pyproject.toml ./
 COPY app/ ./app/
 RUN pip install --no-cache-dir .
