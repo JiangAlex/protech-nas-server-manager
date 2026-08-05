@@ -56,11 +56,33 @@
 ### OTA API
 
 15. **設計決策**：NAS 主動連回 Server 拉取更新（而非 Server SSH 推送）
-16. **Endpoints**
-    - `POST /api/ota/check` — 設備檢查新版本
-    - `GET /api/ota/download/{device_id}` — 取得更新指令
-    - `POST /api/ota/report` — 設備回報更新結果
-17. **Service Logic** — 版本比對、下載資訊生成、update_logs 記錄
+16. **路由分離**：NAS OTA 與 ESP32 OTA 獨立路由
+    - `/api/ota/nas/*` — NAS 設備（systemd 部署）
+    - `/api/ota/esp32/*` — ESP32 設備（firmware binary，placeholder）
+17. **NAS OTA Endpoints**
+    - `POST /api/ota/nas/check` — 設備檢查新版本
+    - `GET /api/ota/nas/download/{device_id}` — 取得 systemd 更新指令
+    - `GET /api/ota/nas/artifacts/{version}/frontend.tar.gz` — 下載預建 frontend
+    - `POST /api/ota/nas/artifacts/{version}/upload` — 上傳 frontend artifact（CI/admin）
+    - `POST /api/ota/nas/report` — 設備回報更新結果
+18. **deploy_mode 設計**
+    - Device model 新增 `deploy_mode` 欄位（預設 `systemd`）
+    - Systemd 模式：git pull + pip install + restart service + 下載預建 frontend artifact
+    - Docker 模式：git pull + docker compose up --build（frontend 在 image 內 build）
+    - NAS 硬體為 Atom D2550 / 4GB RAM，適合 systemd 直接運行
+19. **Frontend Artifact 機制**
+    - NAS 不需要安裝 Node.js
+    - Server 端（或 CI）預建 frontend，打包為 `frontend.tar.gz`
+    - NAS 只需下載解壓至 web 目錄
+    - SHA256 checksum 校驗確保完整性
+    - 存放於 Docker volume `artifacts_data` → `/app/data/artifacts/{version}/`
+20. **Alembic Migration 002** — 新增 `devices.deploy_mode`、`firmware_versions.frontend_artifact_path`、`firmware_versions.frontend_checksum`
+21. **設計建議記錄於 docs/ota-api.md**
+    - Artifact 存放策略（目錄結構 + 版本清理）
+    - 更新鎖機制（避免重複觸發）
+    - Rollback 策略（symlink 切換 + 只保留前一版）
+    - 漸進式更新 Canary Deploy（分階段 rollout）
+    - 安全認證 `X-Device-Token`（未來實作）
 
 ### 文件
 
