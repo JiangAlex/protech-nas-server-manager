@@ -85,10 +85,10 @@ vim .env
 docker compose up -d
 
 # 4. 確認服務健康狀態
-curl http://localhost:8000/health
+curl http://localhost:8060/health
 
 # 5. 訪問管理介面
-open http://localhost:8000/admin/
+open http://localhost:8060/admin/
 ```
 
 ## 目錄結構
