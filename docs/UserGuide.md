@@ -49,7 +49,7 @@ ADMIN_PASSWORD=your-secure-password
 SESSION_SECRET_KEY=your-random-secret-key
 
 # PostgreSQL 連線
-DATABASE_URL=postgresql+asyncpg://reef:accton123@blog.softsnail.com:1432/NasServer
+DATABASE_URL=postgresql+asyncpg://<user>:<password>@<host>:<port>/<database>
 
 # 通知（選填，之後設定）
 TELEGRAM_BOT_TOKEN=your-token
@@ -58,10 +58,10 @@ TELEGRAM_NOTIFY_CHAT_ID=your-chat-id
 
 ### 3. 建立資料庫
 
-如果 `NasServer` 資料庫尚未建立：
+如果資料庫尚未建立：
 
 ```bash
-psql -h blog.softsnail.com -p 1432 -U reef -d twsestock -c "CREATE DATABASE \"NasServer\";"
+psql -h <host> -p <port> -U <user> -d <existing_db> -c "CREATE DATABASE \"NasServer\";"
 ```
 
 ### 4. 啟動服務
@@ -230,9 +230,9 @@ docker exec -it nas-manager-app alembic history
 ### 資料庫連線資訊
 
 ```
-Host: blog.softsnail.com
-Port: 1432
-User: reef
+Host: <your-db-host>
+Port: <your-db-port>
+User: <your-db-user>
 Database: NasServer
 ```
 
@@ -256,7 +256,7 @@ Database: NasServer
 確認 `.env` 中的 `DATABASE_URL` 正確，且 PostgreSQL 允許外部連線。測試：
 
 ```bash
-psql -h blog.softsnail.com -p 1432 -U reef -d NasServer -c "SELECT 1;"
+psql -h <host> -p <port> -U <user> -d NasServer -c "SELECT 1;"
 ```
 
 ### Q: 忘記管理員密碼？
@@ -292,7 +292,7 @@ ports:
 ### Q: 如何備份資料庫？
 
 ```bash
-pg_dump -h blog.softsnail.com -p 1432 -U reef NasServer > backup_$(date +%Y%m%d).sql
+pg_dump -h <host> -p <port> -U <user> NasServer > backup_$(date +%Y%m%d).sql
 ```
 
 ---
