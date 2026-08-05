@@ -55,10 +55,12 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Register API routers
 from app.routers.device_types import router as device_types_router  # noqa: E402
 from app.routers.devices import router as devices_router  # noqa: E402
+from app.routers.ota import router as ota_router  # noqa: E402
 from app.routers.web import router as web_router  # noqa: E402
 
 app.include_router(device_types_router)
 app.include_router(devices_router)
+app.include_router(ota_router)
 app.include_router(web_router)
 
 

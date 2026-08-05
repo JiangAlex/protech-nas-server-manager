@@ -1,0 +1,175 @@
+"""OTA service logic.
+
+Handles update checking, download info generation, and report processing.
+"""
+
+from datetime import datetime, timezone
+from typing import Optional
+
+import structlog
+from sqlalchemy import select, and_
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.device import Device
+from app.models.firmware import FirmwareVersion
+from app.models.update_log import UpdateLog
+from app.schemas.ota import (
+    OTACheckRequest,
+    OTACheckResponse,
+    OTADownloadInfo,
+    OTAReportRequest,
+    OTAReportResponse,
+)
+
+logger = structlog.get_logger()
+
+
+async def check_update(db: AsyncSession, request: OTACheckRequest) -> OTACheckResponse:
+    """Check if an update is available for the device."""
+
+    # Get device info
+    device = await db.get(Device, request.device_id)
+    if not device:
+        return OTACheckResponse(
+            update_available=False,
+            current_version=request.current_version,
+        )
+
+    # Update device's last seen time
+    device.last_seen_at = datetime.now(timezone.utc)
+    if request.current_version:
+        device.current_version = request.current_version
+    if request.current_git_hash:
+        device.current_git_hash = request.current_git_hash
+    device.status = "online"
+
+    # Find latest stable firmware for this device type
+    result = await db.execute(
+        select(FirmwareVersion)
+        .where(
+            and_(
+                FirmwareVersion.device_type_id == device.device_type_id,
+                FirmwareVersion.is_latest == True,  # noqa: E712
+                FirmwareVersion.is_stable == True,  # noqa: E712
+            )
+        )
+        .limit(1)
+    )
+    latest_firmware = result.scalar_one_or_none()
+
+    if not latest_firmware:
+        return OTACheckResponse(
+            update_available=False,
+            current_version=request.current_version,
+        )
+
+    # Compare versions
+    current = request.current_version or device.current_version
+    if current == latest_firmware.version:
+        return OTACheckResponse(
+            update_available=False,
+            current_version=current,
+            latest_version=latest_firmware.version,
+        )
+
+    # Update available
+    base_url = f"/api/ota/download/{device.id}"
+    return OTACheckResponse(
+        update_available=True,
+        current_version=current,
+        latest_version=latest_firmware.version,
+        latest_git_hash=latest_firmware.git_hash,
+        changelog=latest_firmware.changelog,
+        download_url=base_url,
+        file_size=latest_firmware.file_size,
+        file_checksum=latest_firmware.file_checksum,
+        released_at=latest_firmware.released_at,
+    )
+
+
+async def get_download_info(db: AsyncSession, device_id: int) -> Optional[OTADownloadInfo]:
+    """Get download/update instructions for a device."""
+
+    device = await db.get(Device, device_id)
+    if not device:
+        return None
+
+    # Find latest stable firmware
+    result = await db.execute(
+        select(FirmwareVersion)
+        .where(
+            and_(
+                FirmwareVersion.device_type_id == device.device_type_id,
+                FirmwareVersion.is_latest == True,  # noqa: E712
+                FirmwareVersion.is_stable == True,  # noqa: E712
+            )
+        )
+        .limit(1)
+    )
+    latest_firmware = result.scalar_one_or_none()
+
+    if not latest_firmware:
+        return None
+
+    # Build update instructions based on device type config
+    instructions = None
+    if latest_firmware.git_repo_url:
+        instructions = (
+            f"cd /app && git fetch origin {latest_firmware.git_branch or 'main'} && "
+            f"git checkout {latest_firmware.git_hash or latest_firmware.git_branch or 'main'} && "
+            f"docker compose up -d --build"
+        )
+
+    return OTADownloadInfo(
+        version=latest_firmware.version,
+        git_hash=latest_firmware.git_hash,
+        git_repo_url=latest_firmware.git_repo_url,
+        git_branch=latest_firmware.git_branch,
+        file_url=latest_firmware.file_path,
+        file_checksum=latest_firmware.file_checksum,
+        instructions=instructions,
+    )
+
+
+async def report_update(db: AsyncSession, request: OTAReportRequest) -> OTAReportResponse:
+    """Process update report from device."""
+
+    device = await db.get(Device, request.device_id)
+    if not device:
+        return OTAReportResponse(success=False, message="Device not found")
+
+    # Update device info
+    device.last_seen_at = datetime.now(timezone.utc)
+    device.status = "online"
+
+    if request.status == "completed":
+        device.current_version = request.to_version
+        device.current_git_hash = request.to_git_hash
+        device.last_update_at = datetime.now(timezone.utc)
+
+    # Create update log entry
+    update_log = UpdateLog(
+        device_id=request.device_id,
+        from_version=request.from_version,
+        to_version=request.to_version,
+        to_git_hash=request.to_git_hash,
+        status=request.status,
+        triggered_by="device",
+        error_message=request.error_message,
+        started_at=datetime.now(timezone.utc),
+        completed_at=datetime.now(timezone.utc),
+    )
+    db.add(update_log)
+
+    logger.info(
+        "ota_report_received",
+        device_id=request.device_id,
+        device_name=device.name,
+        status=request.status,
+        to_version=request.to_version,
+    )
+
+    return OTAReportResponse(
+        success=True,
+        message=f"Update report recorded: {request.status}",
+    )
