@@ -1,7 +1,3 @@
-{# Base layout template.
-   TailwindCSS (CDN) + Alpine.js + HTMX
-   Sidebar: Dashboard, Devices, Firmware, Updates, Notifications, Settings
-#}
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -11,9 +7,77 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
 </head>
-<body class="bg-gray-100">
-    {% block content %}{% endblock %}
+<body class="bg-gray-50 min-h-screen" x-data="{ sidebarOpen: true }">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col"
+               x-show="sidebarOpen"
+               x-transition>
+            <!-- Logo -->
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-lg font-bold">🖥️ NAS Manager</h1>
+                <p class="text-xs text-gray-400 mt-1">Protech Server Manager</p>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-1">
+                <a href="/admin/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 {% block nav_dashboard %}{% endblock %}">
+                    <span class="mr-3">📊</span> Dashboard
+                </a>
+                <a href="/admin/devices/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 {% block nav_devices %}{% endblock %}">
+                    <span class="mr-3">💻</span> 設備管理
+                </a>
+                <a href="/admin/device-types/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 {% block nav_device_types %}{% endblock %}">
+                    <span class="mr-3">📁</span> 設備類型
+                </a>
+                <a href="/admin/firmware/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 {% block nav_firmware %}{% endblock %}">
+                    <span class="mr-3">📦</span> 韌體版本
+                </a>
+                <a href="/admin/updates/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 {% block nav_updates %}{% endblock %}">
+                    <span class="mr-3">🔄</span> 更新紀錄
+                </a>
+                <a href="/admin/notifications/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 {% block nav_notifications %}{% endblock %}">
+                    <span class="mr-3">🔔</span> 通知設定
+                </a>
+            </nav>
+
+            <!-- User info -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-300">👤 {{ user }}</span>
+                    <a href="/admin/logout" class="text-xs text-gray-400 hover:text-white">登出</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 hover:text-gray-900">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h2 class="text-lg font-semibold text-gray-800">{% block page_title %}{% endblock %}</h2>
+                <div class="text-sm text-gray-500">v0.1.0</div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

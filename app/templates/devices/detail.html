@@ -1,4 +1,146 @@
-{# Device detail - info, current version, update/rollback buttons, update history. #}
 {% extends "base.html" %}
 {% block title %}{{ device.name }}{% endblock %}
-{% block content %}<!-- Device info + operations + history -->{% endblock %}
+{% block nav_devices %}bg-gray-800 text-white{% endblock %}
+{% block page_title %}設備詳情 - {{ device.name }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav class="mb-4 text-sm text-gray-500">
+    <a href="/admin/devices/" class="hover:text-blue-600">設備管理</a>
+    <span class="mx-2">›</span>
+    <span class="text-gray-800">{{ device.name }}</span>
+</nav>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Device info card -->
+    <div class="lg:col-span-2 bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">基本資訊</h3>
+            <div class="flex gap-2">
+                <span class="px-3 py-1 text-sm rounded-full
+                    {% if device.status == 'online' %}bg-green-100 text-green-800
+                    {% elif device.status == 'offline' %}bg-red-100 text-red-800
+                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                    {% if device.status == 'online' %}🟢 在線
+                    {% elif device.status == 'offline' %}🔴 離線
+                    {% else %}🟡 未知{% endif %}
+                </span>
+                {% if device.is_active %}
+                <span class="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-800">啟用</span>
+                {% else %}
+                <span class="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-600">已停用</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="p-6">
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">名稱</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ device.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">設備類型</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ device.device_type.display_name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">IP 位址</dt>
+                    <dd class="mt-1 text-sm text-gray-900 font-mono">{{ device.ip_address or '-' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">目前版本</dt>
+                    <dd class="mt-1 text-sm text-gray-900 font-mono">{{ device.current_version or '-' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Git Hash</dt>
+                    <dd class="mt-1 text-sm text-gray-900 font-mono">{{ device.current_git_hash[:8] if device.current_git_hash else '-' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">說明</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ device.description or '-' }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Connection & Actions card -->
+    <div class="space-y-6">
+        <!-- SSH Info -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">SSH 連線</h3>
+            </div>
+            <div class="p-6 space-y-3">
+                <div>
+                    <dt class="text-xs font-medium text-gray-500">Host</dt>
+                    <dd class="text-sm text-gray-900 font-mono">{{ device.ssh_host or device.ip_address or '-' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500">Port</dt>
+                    <dd class="text-sm text-gray-900">{{ device.ssh_port }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500">User</dt>
+                    <dd class="text-sm text-gray-900">{{ device.ssh_user or '-' }}</dd>
+                </div>
+                {% if device.ssh_host or device.ip_address %}
+                <div class="pt-2">
+                    <code class="text-xs bg-gray-100 px-2 py-1 rounded block">
+                        ssh {{ device.ssh_user or 'user' }}@{{ device.ssh_host or device.ip_address }} -p {{ device.ssh_port }}
+                    </code>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">操作</h3>
+            </div>
+            <div class="p-6 space-y-3">
+                <button class="w-full px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 transition"
+                        disabled title="尚未實作">
+                    🔄 推送更新
+                </button>
+                <button class="w-full px-4 py-2 bg-yellow-500 text-white rounded-md text-sm hover:bg-yellow-600 transition"
+                        disabled title="尚未實作">
+                    ⏪ Rollback
+                </button>
+                <button class="w-full px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition"
+                        disabled title="尚未實作">
+                    🩺 健康檢查
+                </button>
+                <hr class="my-2">
+                <button onclick="deleteDevice({{ device.id }})"
+                        class="w-full px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 transition">
+                    🗑️ 停用設備
+                </button>
+            </div>
+        </div>
+
+        <!-- Timestamps -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 space-y-2 text-sm text-gray-500">
+                <p>建立時間：{{ device.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p>最後更新：{{ device.last_update_at.strftime('%Y-%m-%d %H:%M') if device.last_update_at else '-' }}</p>
+                <p>最後上線：{{ device.last_seen_at.strftime('%Y-%m-%d %H:%M') if device.last_seen_at else '-' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function deleteDevice(id) {
+    if (!confirm('確定要停用此設備？')) return;
+    const res = await fetch(`/api/devices/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+        window.location.href = '/admin/devices/';
+    } else {
+        alert('操作失敗');
+    }
+}
+</script>
+{% endblock %}

@@ -1,4 +1,119 @@
-{# Dashboard - device status overview, recent updates, alerts. #}
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
-{% block content %}<!-- Device summary cards, recent update list -->{% endblock %}
+{% block nav_dashboard %}bg-gray-800 text-white{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Status cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow p-5">
+        <div class="flex items-center">
+            <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm text-gray-500">總設備數</p>
+                <p class="text-2xl font-bold text-gray-800">{{ counts.total }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-5">
+        <div class="flex items-center">
+            <div class="bg-green-100 text-green-600 p-3 rounded-full">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm text-gray-500">在線</p>
+                <p class="text-2xl font-bold text-green-600">{{ counts.online }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-5">
+        <div class="flex items-center">
+            <div class="bg-red-100 text-red-600 p-3 rounded-full">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm text-gray-500">離線</p>
+                <p class="text-2xl font-bold text-red-600">{{ counts.offline }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-5">
+        <div class="flex items-center">
+            <div class="bg-yellow-100 text-yellow-600 p-3 rounded-full">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm text-gray-500">未知</p>
+                <p class="text-2xl font-bold text-yellow-600">{{ counts.unknown }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Device list table -->
+<div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-800">設備列表</h3>
+        <a href="/admin/devices/" class="text-blue-600 text-sm hover:underline">查看全部 →</a>
+    </div>
+
+    {% if devices %}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">名稱</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">版本</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">最後上線</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for device in devices[:10] %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <a href="/admin/devices/{{ device.id }}/" class="text-blue-600 hover:underline font-medium">
+                            {{ device.name }}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">{{ device.ip_address or '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">{{ device.current_version or '-' }}</td>
+                    <td class="px-6 py-4">
+                        {% if device.status == 'online' %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">在線</span>
+                        {% elif device.status == 'offline' %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">離線</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">未知</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        {{ device.last_seen_at.strftime('%Y-%m-%d %H:%M') if device.last_seen_at else '-' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="px-6 py-12 text-center text-gray-500">
+        <p class="text-lg">尚未新增任何設備</p>
+        <p class="text-sm mt-2">透過 API 或管理介面新增第一台設備</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

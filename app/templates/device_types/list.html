@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}設備類型{% endblock %}
+{% block nav_device_types %}bg-gray-800 text-white{% endblock %}
+{% block page_title %}設備類型管理{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-800">設備類型 ({{ device_types|length }})</h3>
+        <button onclick="document.getElementById('add-type-modal').classList.remove('hidden')"
+                class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition">
+            + 新增類型
+        </button>
+    </div>
+
+    {% if device_types %}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">名稱</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">顯示名稱</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">更新方式</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">健康檢查</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for dt in device_types %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-500">#{{ dt.id }}</td>
+                    <td class="px-6 py-4 text-sm font-mono text-gray-900">{{ dt.name }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{{ dt.display_name }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">{{ dt.update_method }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">{{ dt.health_check_method }}</td>
+                    <td class="px-6 py-4">
+                        <button onclick="deleteType({{ dt.id }}, '{{ dt.name }}')"
+                                class="text-red-600 hover:underline text-sm">刪除</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="px-6 py-12 text-center text-gray-500">
+        <p class="text-lg">尚未建立任何設備類型</p>
+        <p class="text-sm mt-2">先建立設備類型，才能新增設備</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add type modal -->
+<div id="add-type-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">新增設備類型</h3>
+            <button onclick="document.getElementById('add-type-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <form id="add-type-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">名稱 (英文代碼) *</label>
+                <input type="text" name="name" required placeholder="nas, esp32, router..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">顯示名稱 *</label>
+                <input type="text" name="display_name" required placeholder="NAS 設備"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">更新方式</label>
+                <select name="update_method"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="git_pull">Git Pull + Build</option>
+                    <option value="ota">OTA (HTTP)</option>
+                    <option value="docker">Docker Pull</option>
+                    <option value="manual">手動</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">健康檢查方式</label>
+                <select name="health_check_method"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="http">HTTP Ping</option>
+                    <option value="ssh">SSH</option>
+                    <option value="icmp">ICMP Ping</option>
+                    <option value="none">不檢查</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="document.getElementById('add-type-modal').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">取消</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">新增</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('add-type-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        name: form.name.value,
+        display_name: form.display_name.value,
+        update_method: form.update_method.value,
+        health_check_method: form.health_check_method.value,
+    };
+    const res = await fetch('/api/device-types', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '新增失敗');
+    }
+});
+
+async function deleteType(id, name) {
+    if (!confirm(`確定要刪除設備類型「${name}」？`)) return;
+    const res = await fetch(`/api/device-types/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '刪除失敗');
+    }
+}
+</script>
+{% endblock %}

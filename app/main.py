@@ -9,11 +9,15 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
+from starlette.middleware.sessions import SessionMiddleware
 
+from app.config import get_settings
 from app.database import engine
 
 logger = structlog.get_logger()
+settings = get_settings()
 
 
 @asynccontextmanager
@@ -41,6 +45,21 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Session middleware for web admin auth
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret_key)
+
+# Static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# Register API routers
+from app.routers.device_types import router as device_types_router  # noqa: E402
+from app.routers.devices import router as devices_router  # noqa: E402
+from app.routers.web import router as web_router  # noqa: E402
+
+app.include_router(device_types_router)
+app.include_router(devices_router)
+app.include_router(web_router)
 
 
 @app.get("/health")
