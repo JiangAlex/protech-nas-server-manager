@@ -10,7 +10,7 @@ services:
       dockerfile: Dockerfile
     container_name: nas-manager-app
     ports:
-      - "8000:8000"
+      - "8060:8000"
     env_file:
       - .env
     extra_hosts:
