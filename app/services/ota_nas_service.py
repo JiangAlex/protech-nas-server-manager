@@ -66,13 +66,25 @@ async def check_update(db: AsyncSession, request: NASCheckRequest) -> NASCheckRe
             current_version=request.current_version,
         )
 
-    # Compare versions
+    # Compare versions AND git hash
     current = request.current_version or device.current_version
-    if current == latest_firmware.version:
+    current_hash = request.current_git_hash or device.current_git_hash
+
+    # Same version AND same git hash = no update needed
+    version_match = (current == latest_firmware.version)
+    hash_match = (
+        current_hash
+        and latest_firmware.git_hash
+        and current_hash in latest_firmware.git_hash  # short hash match
+    ) if current_hash and latest_firmware.git_hash else True  # skip hash check if not available
+
+    if version_match and hash_match:
         return NASCheckResponse(
             update_available=False,
             current_version=current,
             latest_version=latest_firmware.version,
+            latest_git_hash=latest_firmware.git_hash,
+            released_at=latest_firmware.released_at,
         )
 
     # Build frontend artifact URL if available
