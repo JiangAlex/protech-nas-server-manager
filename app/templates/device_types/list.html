@@ -34,7 +34,9 @@
                     <td class="px-6 py-4 text-sm text-gray-900">{{ dt.display_name }}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">{{ dt.update_method }}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">{{ dt.health_check_method }}</td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4 flex gap-2">
+                        <button onclick="openEditModal({{ dt.id }}, '{{ dt.display_name }}', '{{ dt.update_method }}', '{{ dt.health_check_method }}')"
+                                class="text-blue-600 hover:underline text-sm">編輯</button>
                         <button onclick="deleteType({{ dt.id }}, '{{ dt.name }}')"
                                 class="text-red-600 hover:underline text-sm">刪除</button>
                     </td>
@@ -100,10 +102,57 @@
         </form>
     </div>
 </div>
+
+<!-- Edit type modal -->
+<div id="edit-type-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">編輯設備類型</h3>
+            <button onclick="document.getElementById('edit-type-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <form id="edit-type-form" class="space-y-4">
+            <input type="hidden" name="id" id="edit-id">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">顯示名稱 *</label>
+                <input type="text" name="display_name" id="edit-display-name" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">更新方式</label>
+                <select name="update_method" id="edit-update-method"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="git_pull">Git Pull + Build</option>
+                    <option value="ota">OTA (HTTP)</option>
+                    <option value="docker">Docker Pull</option>
+                    <option value="manual">手動</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">健康檢查方式</label>
+                <select name="health_check_method" id="edit-health-check-method"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="http">HTTP Ping</option>
+                    <option value="ssh">SSH</option>
+                    <option value="icmp">ICMP Ping</option>
+                    <option value="none">不檢查</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="document.getElementById('edit-type-modal').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">取消</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">儲存</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Add type
 document.getElementById('add-type-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.target;
@@ -126,6 +175,38 @@ document.getElementById('add-type-form').addEventListener('submit', async (e) =>
     }
 });
 
+// Edit type
+function openEditModal(id, displayName, updateMethod, healthCheckMethod) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-display-name').value = displayName;
+    document.getElementById('edit-update-method').value = updateMethod;
+    document.getElementById('edit-health-check-method').value = healthCheckMethod;
+    document.getElementById('edit-type-modal').classList.remove('hidden');
+}
+
+document.getElementById('edit-type-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const id = form.id.value;
+    const data = {
+        display_name: form.display_name.value,
+        update_method: form.update_method.value,
+        health_check_method: form.health_check_method.value,
+    };
+    const res = await fetch(`/api/device-types/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '更新失敗');
+    }
+});
+
+// Delete type
 async function deleteType(id, name) {
     if (!confirm(`確定要刪除設備類型「${name}」？`)) return;
     const res = await fetch(`/api/device-types/${id}`, { method: 'DELETE' });
