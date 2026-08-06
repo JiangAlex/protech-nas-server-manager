@@ -16,6 +16,10 @@ env/
 # Environment variables
 .env
 
+# Docs (local only, not tracked)
+docs/*.md
+docs/tasks/
+
 # IDE
 .vscode/
 .idea/
