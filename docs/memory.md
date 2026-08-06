@@ -106,6 +106,34 @@
    - 操作按鈕（設為 Latest、設為 Stable、刪除）
 3. **Firmware Service** — 自動產生 `version_display`（如 `1.0.0-abc1234`），建立時若標記 latest 會自動取消前一個 latest
 
+### OTA 更新判斷修正
+
+4. **Git hash 比對** — OTA check 不再只比版本號，加上 git hash 比對
+   - 版本相同 + hash 相同 → `update_available: false`
+   - 版本不同 或 hash 不同 → `update_available: true`
+   - 支援 short hash matching
+
+### Device Model 擴充 & 群發更新
+
+5. **Device 新增欄位**
+   - `sku` — 設備 SKU 型號
+   - `customer_id` — 客戶 ID
+   - `mac_address` — MAC 地址
+6. **Schemas 更新** — DeviceCreate/Update/Response 新增三個欄位
+7. **NAS OTA** — NASCheckRequest 新增 `mac_address`，check_update 時保存 mac_address
+8. **群發更新 API** — 新建 `app/routers/ota_batch.py`，支援批次推送更新
+9. **Alembic Migration 003** — 新增 sku、customer_id、mac_address 欄位
+
+| 檔案 | 變更 |
+|------|------|
+| `app/models/device.py` | Device 新增 sku、customer_id、mac_address 欄位 |
+| `app/schemas/__init__.py` | DeviceCreate/Update/Response 新增三個欄位 |
+| `app/schemas/ota_nas.py` | NASCheckRequest 新增 mac_address |
+| `app/services/ota_nas_service.py` | check_update 時保存 mac_address |
+| `app/routers/ota_batch.py` | 新建 — 群發更新 API |
+| `app/main.py` | 註冊 ota_batch_router |
+| `alembic/versions/003_add_sku_customer_mac.py` | 新建 — DB migration |
+
 ### 安全修正
 
 21. 移除所有檔案中的真實帳密（`.env.example`、`alembic.ini`、`UserGuide.md`）
