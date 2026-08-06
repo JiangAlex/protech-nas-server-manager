@@ -45,6 +45,8 @@ async def check_update(db: AsyncSession, request: NASCheckRequest) -> NASCheckRe
         device.current_git_hash = request.current_git_hash
     if request.deploy_mode:
         device.deploy_mode = request.deploy_mode
+    if request.mac_address:
+        device.mac_address = request.mac_address
 
     # Find latest stable firmware for this device type
     result = await db.execute(

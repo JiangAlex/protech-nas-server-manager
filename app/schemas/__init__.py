@@ -45,6 +45,9 @@ class DeviceCreate(BaseModel):
     name: str
     description: Optional[str] = None
     is_active: bool = True
+    sku: Optional[str] = None
+    customer_id: Optional[str] = None
+    mac_address: Optional[str] = None
     ip_address: Optional[str] = None
     ssh_host: Optional[str] = None
     ssh_port: int = 22
@@ -57,6 +60,9 @@ class DeviceUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     is_active: Optional[bool] = None
+    sku: Optional[str] = None
+    customer_id: Optional[str] = None
+    mac_address: Optional[str] = None
     ip_address: Optional[str] = None
     ssh_host: Optional[str] = None
     ssh_port: Optional[int] = None
@@ -72,6 +78,9 @@ class DeviceResponse(BaseModel):
     name: str
     description: Optional[str] = None
     is_active: bool
+    sku: Optional[str] = None
+    customer_id: Optional[str] = None
+    mac_address: Optional[str] = None
     current_version: Optional[str] = None
     current_git_hash: Optional[str] = None
     ip_address: Optional[str] = None
@@ -81,6 +90,7 @@ class DeviceResponse(BaseModel):
     last_seen_at: Optional[datetime] = None
     last_update_at: Optional[datetime] = None
     status: str
+    deploy_mode: str = "systemd"
     config: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
@@ -93,6 +103,9 @@ class DeviceListResponse(BaseModel):
     name: str
     device_type_id: int
     is_active: bool
+    sku: Optional[str] = None
+    customer_id: Optional[str] = None
+    mac_address: Optional[str] = None
     current_version: Optional[str] = None
     ip_address: Optional[str] = None
     status: str

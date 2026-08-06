@@ -77,6 +77,24 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                        <input type="text" name="sku" value="{{ device.sku or '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">客戶編號</label>
+                        <input type="text" name="customer_id" value="{{ device.customer_id or '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">MAC Address</label>
+                        <input type="text" name="mac_address" value="{{ device.mac_address or '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                               placeholder="AA:BB:CC:DD:EE:FF">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">SSH Host</label>
                         <input type="text" name="ssh_host" value="{{ device.ssh_host or '' }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
@@ -191,6 +209,9 @@ document.getElementById('edit-device-form').addEventListener('submit', async (e)
     const data = {
         name: form.name.value,
         ip_address: form.ip_address.value || null,
+        sku: form.sku.value || null,
+        customer_id: form.customer_id.value || null,
+        mac_address: form.mac_address.value || null,
         ssh_host: form.ssh_host.value || null,
         ssh_port: parseInt(form.ssh_port.value) || 22,
         ssh_user: form.ssh_user.value || null,

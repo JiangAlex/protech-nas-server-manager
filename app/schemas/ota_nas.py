@@ -17,6 +17,7 @@ class NASCheckRequest(BaseModel):
     device_id: int
     current_version: Optional[str] = None
     current_git_hash: Optional[str] = None
+    mac_address: Optional[str] = None
     deploy_mode: str = "systemd"
 
 

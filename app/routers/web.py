@@ -176,3 +176,35 @@ async def updates_page(
         "updates/list.html",
         {"request": request, "user": user, "update_logs": update_logs},
     )
+
+
+# ── Batch Update page ───────────────────────────────────────
+
+
+@router.get("/batch-update/", response_class=HTMLResponse)
+async def batch_update_page(
+    request: Request,
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Batch update page - select devices by SKU/customer and push update."""
+    devices = await device_service.get_devices(db, is_active=True)
+    device_types = await device_service.get_device_types(db)
+    firmware_list = await firmware_service.get_firmware_list(db)
+
+    # Extract unique SKUs and customer IDs for filters
+    skus = sorted(set(d.sku for d in devices if d.sku))
+    customers = sorted(set(d.customer_id for d in devices if d.customer_id))
+
+    return templates.TemplateResponse(
+        "batch/update.html",
+        {
+            "request": request,
+            "user": user,
+            "devices": devices,
+            "device_types": device_types,
+            "firmware_list": firmware_list,
+            "skus": skus,
+            "customers": customers,
+        },
+    )

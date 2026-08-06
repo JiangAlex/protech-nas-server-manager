@@ -45,6 +45,11 @@ class Device(Base, TimestampMixin):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    # Product identification
+    sku: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    customer_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    mac_address: Mapped[Optional[str]] = mapped_column(String(17), nullable=True, unique=True)
+
     # Version info
     current_version: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     current_git_hash: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
