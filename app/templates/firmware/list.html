@@ -56,6 +56,8 @@
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
+                            <button onclick="openEditFirmware({{ fw.id }}, '{{ fw.version }}', '{{ fw.git_hash or '' }}', '{{ fw.git_branch or 'main' }}', '{{ fw.git_repo_url or '' }}', `{{ fw.changelog or '' }}`, {{ 'true' if fw.is_latest else 'false' }}, {{ 'true' if fw.is_stable else 'false' }})"
+                                    class="text-blue-600 hover:underline text-xs">編輯</button>
                             {% if not fw.is_latest %}
                             <button onclick="markLatest({{ fw.id }})"
                                     class="text-blue-600 hover:underline text-xs">設為 Latest</button>
@@ -148,6 +150,65 @@
         </form>
     </div>
 </div>
+<!-- Edit firmware modal -->
+<div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">編輯韌體版本</h3>
+            <button onclick="document.getElementById('edit-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <form id="edit-firmware-form" class="space-y-4">
+            <input type="hidden" name="id" id="edit-fw-id">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">版本號 *</label>
+                    <input type="text" name="version" id="edit-fw-version" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Git Branch</label>
+                    <input type="text" name="git_branch" id="edit-fw-branch"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Git Hash</label>
+                <input type="text" name="git_hash" id="edit-fw-hash"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Git Repo URL</label>
+                <input type="text" name="git_repo_url" id="edit-fw-repo"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Changelog</label>
+                <textarea name="changelog" id="edit-fw-changelog" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="flex gap-4">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="is_latest" id="edit-fw-latest"
+                           class="rounded border-gray-300 text-blue-600">
+                    <span class="text-sm text-gray-700">Latest</span>
+                </label>
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="is_stable" id="edit-fw-stable"
+                           class="rounded border-gray-300 text-green-600">
+                    <span class="text-sm text-gray-700">Stable</span>
+                </label>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="document.getElementById('edit-modal').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">取消</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">儲存</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -179,6 +240,48 @@ document.getElementById('add-firmware-form').addEventListener('submit', async (e
     } else {
         const err = await res.json();
         alert(err.detail || '新增失敗');
+    }
+});
+
+// Edit firmware
+function openEditFirmware(id, version, gitHash, gitBranch, gitRepoUrl, changelog, isLatest, isStable) {
+    document.getElementById('edit-fw-id').value = id;
+    document.getElementById('edit-fw-version').value = version;
+    document.getElementById('edit-fw-hash').value = gitHash;
+    document.getElementById('edit-fw-branch').value = gitBranch;
+    document.getElementById('edit-fw-repo').value = gitRepoUrl;
+    document.getElementById('edit-fw-changelog').value = changelog;
+    document.getElementById('edit-fw-latest').checked = isLatest;
+    document.getElementById('edit-fw-stable').checked = isStable;
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+document.getElementById('edit-firmware-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const id = document.getElementById('edit-fw-id').value;
+    const data = {
+        version: form.version.value,
+        git_hash: form.git_hash.value || null,
+        git_branch: form.git_branch.value || null,
+        git_repo_url: form.git_repo_url.value || null,
+        changelog: form.changelog.value || null,
+        is_latest: form.is_latest.checked,
+        is_stable: form.is_stable.checked,
+    };
+    if (data.git_hash) {
+        data.git_hash_short = data.git_hash.substring(0, 7);
+    }
+    const res = await fetch(`/api/firmware/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '更新失敗');
     }
 });
 
