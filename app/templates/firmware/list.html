@@ -1,4 +1,204 @@
-{# Firmware list - versions by device type, upload button, mark latest. #}
 {% extends "base.html" %}
-{% block title %}韌體管理{% endblock %}
-{% block content %}<!-- Firmware table + upload form -->{% endblock %}
+{% block title %}韌體版本{% endblock %}
+{% block nav_firmware %}bg-gray-800 text-white{% endblock %}
+{% block page_title %}韌體版本管理{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-800">韌體版本 ({{ firmware_list|length }})</h3>
+        <button onclick="document.getElementById('add-modal').classList.remove('hidden')"
+                class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition">
+            + 新增版本
+        </button>
+    </div>
+
+    {% if firmware_list %}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">版本</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">設備類型</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Git Hash</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">標記</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">發布時間</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for fw in firmware_list %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <span class="font-medium text-gray-900">{{ fw.version }}</span>
+                        {% if fw.version_display and fw.version_display != fw.version %}
+                        <span class="text-xs text-gray-400 ml-1">({{ fw.version_display }})</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">{{ fw.device_type_id }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">{{ fw.git_hash[:8] if fw.git_hash else '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">{{ fw.git_branch or '-' }}</td>
+                    <td class="px-6 py-4">
+                        {% if fw.is_latest %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 mr-1">Latest</span>
+                        {% endif %}
+                        {% if fw.is_stable %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">Stable</span>
+                        {% endif %}
+                        {% if not fw.is_latest and not fw.is_stable %}
+                        <span class="text-gray-400 text-sm">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        {{ fw.released_at.strftime('%Y-%m-%d %H:%M') if fw.released_at else fw.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex gap-2">
+                            {% if not fw.is_latest %}
+                            <button onclick="markLatest({{ fw.id }})"
+                                    class="text-blue-600 hover:underline text-xs">設為 Latest</button>
+                            {% endif %}
+                            {% if not fw.is_stable %}
+                            <button onclick="markStable({{ fw.id }})"
+                                    class="text-green-600 hover:underline text-xs">設為 Stable</button>
+                            {% endif %}
+                            <button onclick="deleteFirmware({{ fw.id }}, '{{ fw.version }}')"
+                                    class="text-red-600 hover:underline text-xs">刪除</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="px-6 py-12 text-center text-gray-500">
+        <p class="text-lg">尚未建立任何韌體版本</p>
+        <p class="text-sm mt-2">點擊「+ 新增版本」建立第一個韌體版本記錄</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add firmware modal -->
+<div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">新增韌體版本</h3>
+            <button onclick="document.getElementById('add-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <form id="add-firmware-form" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">版本號 *</label>
+                    <input type="text" name="version" required placeholder="1.0.0"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">設備類型 *</label>
+                    <select name="device_type_id" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                        {% for dt in device_types %}
+                        <option value="{{ dt.id }}">{{ dt.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Git Hash</label>
+                    <input type="text" name="git_hash" placeholder="full commit hash"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Git Branch</label>
+                    <input type="text" name="git_branch" value="main"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Git Repo URL</label>
+                <input type="text" name="git_repo_url" placeholder="https://github.com/..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Changelog</label>
+                <textarea name="changelog" rows="3" placeholder="版本更新說明..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="flex gap-4">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="is_latest" class="rounded border-gray-300 text-blue-600">
+                    <span class="text-sm text-gray-700">標記為 Latest</span>
+                </label>
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="is_stable" class="rounded border-gray-300 text-green-600">
+                    <span class="text-sm text-gray-700">標記為 Stable</span>
+                </label>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="document.getElementById('add-modal').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">取消</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">新增</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('add-firmware-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        device_type_id: parseInt(form.device_type_id.value),
+        version: form.version.value,
+        git_hash: form.git_hash.value || null,
+        git_branch: form.git_branch.value || "main",
+        git_repo_url: form.git_repo_url.value || null,
+        changelog: form.changelog.value || null,
+        is_latest: form.is_latest.checked,
+        is_stable: form.is_stable.checked,
+    };
+    // Auto-generate git_hash_short
+    if (data.git_hash) {
+        data.git_hash_short = data.git_hash.substring(0, 7);
+    }
+    const res = await fetch('/api/firmware', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '新增失敗');
+    }
+});
+
+async function markLatest(id) {
+    const res = await fetch(`/api/firmware/${id}/latest`, { method: 'POST' });
+    if (res.ok) window.location.reload();
+    else alert('操作失敗');
+}
+
+async function markStable(id) {
+    const res = await fetch(`/api/firmware/${id}/stable`, { method: 'POST' });
+    if (res.ok) window.location.reload();
+    else alert('操作失敗');
+}
+
+async function deleteFirmware(id, version) {
+    if (!confirm(`確定要刪除韌體版本 ${version}？`)) return;
+    const res = await fetch(`/api/firmware/${id}`, { method: 'DELETE' });
+    if (res.ok) window.location.reload();
+    else alert('刪除失敗');
+}
+</script>
+{% endblock %}

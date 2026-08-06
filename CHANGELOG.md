@@ -9,6 +9,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- 韌體版本管理 API + Web 頁面
+  - `GET /api/firmware` — 列出所有韌體版本（支援 device_type_id 篩選）
+  - `POST /api/firmware` — 建立韌體版本記錄
+  - `GET /api/firmware/{id}` — 取得韌體詳情
+  - `PUT /api/firmware/{id}` — 更新韌體資訊
+  - `DELETE /api/firmware/{id}` — 刪除韌體版本
+  - `POST /api/firmware/{id}/latest` — 標記為 Latest
+  - `POST /api/firmware/{id}/stable` — 標記為 Stable
+  - `/admin/firmware/` — Web 管理頁面（列表 + 新增 modal + 操作按鈕）
 - OTA 路由分離：NAS OTA 與 ESP32 OTA 獨立路由
   - `POST /api/ota/nas/check` — NAS 設備檢查新版本
   - `GET /api/ota/nas/download/{device_id}` — 取得 systemd 更新指令

@@ -12,6 +12,7 @@ from starlette.status import HTTP_303_SEE_OTHER
 from app.config import get_settings
 from app.database import get_db
 from app.services import device_service
+from app.services import firmware_service
 
 settings = get_settings()
 templates = Jinja2Templates(directory="app/templates")
@@ -124,4 +125,27 @@ async def device_types_page(
     return templates.TemplateResponse(
         "device_types/list.html",
         {"request": request, "user": user, "device_types": device_types},
+    )
+
+
+# ── Firmware page ───────────────────────────────────────────
+
+
+@router.get("/firmware/", response_class=HTMLResponse)
+async def firmware_page(
+    request: Request,
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Firmware version management page."""
+    firmware_list = await firmware_service.get_firmware_list(db)
+    device_types = await device_service.get_device_types(db)
+    return templates.TemplateResponse(
+        "firmware/list.html",
+        {
+            "request": request,
+            "user": user,
+            "firmware_list": firmware_list,
+            "device_types": device_types,
+        },
     )

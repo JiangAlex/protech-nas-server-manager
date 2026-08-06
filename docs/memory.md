@@ -90,6 +90,22 @@
 19. `docs/ota-api.md` — OTA API 規格
 20. `CHANGELOG.md` — 變更記錄
 
+---
+
+## 2026-08-06（四）
+
+### 韌體版本管理
+
+1. **Firmware API** — 完整 CRUD + mark latest/stable
+   - `GET/POST/PUT/DELETE /api/firmware`
+   - `POST /api/firmware/{id}/latest` — 標記為最新版（自動取消同類型其他版本的 latest）
+   - `POST /api/firmware/{id}/stable` — 標記為穩定版
+2. **Firmware Web 頁面** — `/admin/firmware/`
+   - 版本列表（版本號、設備類型、git hash、branch、latest/stable 標記）
+   - 新增版本 modal（version、device_type、git info、changelog、latest/stable flags）
+   - 操作按鈕（設為 Latest、設為 Stable、刪除）
+3. **Firmware Service** — 自動產生 `version_display`（如 `1.0.0-abc1234`），建立時若標記 latest 會自動取消前一個 latest
+
 ### 安全修正
 
 21. 移除所有檔案中的真實帳密（`.env.example`、`alembic.ini`、`UserGuide.md`）
