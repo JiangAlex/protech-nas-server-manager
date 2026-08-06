@@ -134,6 +134,20 @@
 | `app/main.py` | 註冊 ota_batch_router |
 | `alembic/versions/003_add_sku_customer_mac.py` | 新建 — DB migration |
 
+### Web UI 擴充
+
+10. **設備列表頁** — 顯示 SKU、客戶編號、MAC Address 欄位
+11. **新增設備 modal** — 加入 SKU、客戶編號、MAC Address 輸入欄位
+12. **設備詳情/編輯頁** — 可編輯 SKU、客戶編號、MAC Address
+13. **韌體版本頁** — 加入編輯 modal（版本號、git hash/branch/repo、changelog、latest/stable 標記）
+14. **更新紀錄頁** — `/admin/updates/`（設備名稱、版本變更、狀態、觸發方式、時間、錯誤訊息）
+15. **群發更新頁** — `/admin/batch-update/`
+    - 按 SKU / 客戶 / 設備類型篩選
+    - Checkbox 勾選設備（全選/取消全選）
+    - 選擇目標韌體版本
+    - 一鍵群發更新，呼叫 `/api/ota/batch/trigger`
+16. **Sidebar** — 新增「🚀 群發更新」導覽連結
+
 ### 安全修正
 
 21. 移除所有檔案中的真實帳密（`.env.example`、`alembic.ini`、`UserGuide.md`）
