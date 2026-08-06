@@ -149,3 +149,30 @@ async def firmware_page(
             "device_types": device_types,
         },
     )
+
+
+# ── Updates history page ────────────────────────────────────
+
+
+@router.get("/updates/", response_class=HTMLResponse)
+async def updates_page(
+    request: Request,
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update history page."""
+    from app.models.update_log import UpdateLog
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+
+    result = await db.execute(
+        select(UpdateLog)
+        .options(selectinload(UpdateLog.device))
+        .order_by(UpdateLog.id.desc())
+        .limit(100)
+    )
+    update_logs = list(result.scalars().all())
+    return templates.TemplateResponse(
+        "updates/list.html",
+        {"request": request, "user": user, "update_logs": update_logs},
+    )
