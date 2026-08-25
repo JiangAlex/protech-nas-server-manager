@@ -169,7 +169,6 @@ async def updates_page(
         select(UpdateLog)
         .options(selectinload(UpdateLog.device))
         .order_by(UpdateLog.id.desc())
-        .limit(100)
     )
     update_logs = list(result.scalars().all())
     return templates.TemplateResponse(
