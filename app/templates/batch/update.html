@@ -206,7 +206,7 @@ async function batchUpdate() {
     resultContent.innerHTML = '<p class="text-gray-500">正在發送更新指令...</p>';
 
     try {
-        const res = await fetch('/api/ota/batch/trigger', {
+        const res = await fetch('/api/ota/batch/push', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
