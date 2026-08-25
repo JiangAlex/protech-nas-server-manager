@@ -6,10 +6,9 @@ Table: notification_configs
 from typing import Optional
 
 from sqlalchemy import Boolean, Integer, String
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, JSONB, TimestampMixin
 
 
 class NotificationConfig(Base, TimestampMixin):

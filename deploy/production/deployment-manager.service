@@ -1,0 +1,35 @@
+[Unit]
+Description=Application Deployment Manager
+Documentation=https://your-docs.internal/deployment-manager
+After=network-online.target nginx.service wireguard-wg0.service
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=oneshot
+# Path to your actual deploy script / application entry point
+ExecStart=/opt/deploy/run.sh
+# Run as non-root user — change to match your deployment user
+User=deploy
+Group=deploy
+
+# Environment
+Environment="DEPLOY_ENV=production"
+Environment="DEPLOY_ROOT=/opt/deploy"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=deployment-manager
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/deploy /var/log/deploy
+# Allow reading static assets served by nginx
+ReadOnlyPaths=/srv/static
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>韌體版本 - NAS Server Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="{ sidebarOpen: true }">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col"
+               x-show="sidebarOpen"
+               x-transition>
+            <!-- Logo -->
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-lg font-bold">🖥️ NAS Manager</h1>
+                <p class="text-xs text-gray-400 mt-1">Protech Server Manager</p>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-1">
+                <a href="/admin/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📊</span> Dashboard
+                </a>
+                <a href="/admin/devices/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">💻</span> 設備管理
+                </a>
+                <a href="/admin/device-types/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📁</span> 設備類型
+                </a>
+                <a href="/admin/firmware/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 bg-gray-800 text-white">
+                    <span class="mr-3">📦</span> 韌體版本
+                </a>
+                <a href="/admin/updates/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔄</span> 更新紀錄
+                </a>
+                <a href="/admin/batch-update/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🚀</span> 群發更新
+                </a>
+                <a href="/admin/notifications/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔔</span> 通知設定
+                </a>
+            </nav>
+
+            <!-- User info -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-300">👤 admin</span>
+                    <a href="/admin/logout" class="text-xs text-gray-400 hover:text-white">登出</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 hover:text-gray-900">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h2 class="text-lg font-semibold text-gray-800">韌體版本管理</h2>
+                <div class="text-sm text-gray-500">v0.1.0</div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                
+<div class="bg-white rounded-lg shadow">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-800">韌體版本 (1)</h3>
+        <button onclick="document.getElementById('add-modal').classList.remove('hidden')"
+                class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition">
+            + 新增版本
+        </button>
+    </div>
+
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">版本</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">設備類型</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Git Hash</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">標記</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">發布時間</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <span class="font-medium text-gray-900">1.0.0</span>
+                        
+                        <span class="text-xs text-gray-400 ml-1">(1.0.0-976c4a3)</span>
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">1</td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">976c4a3</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">main</td>
+                    <td class="px-6 py-4">
+                        
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 mr-1">Latest</span>
+                        
+                        
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">Stable</span>
+                        
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        2026-08-06 01:45
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex gap-2">
+                            <button onclick="openEditFirmware(1, '1.0.0', '976c4a3', 'main', 'https://github.com/JiangAlex/protech-nas.git', `功能：實現OTA系統更新（基於git + 前端工件下載）
+- 新增 OTA API 規格 (docs/ota-api.md)，支援 Systemd/Docker 模式 - 重寫 check_updates/apply_updates 以使用 OTA 伺服器 API - 新增獨立更新腳本 (scripts/ota-update.sh) - 新增 VERSION 檔案和 OTA 配置環境變數 - 修復規格Node.js`, true, true)"
+                                    class="text-blue-600 hover:underline text-xs">編輯</button>
+                            
+                            
+                            <button onclick="deleteFirmware(1, '1.0.0')"
+                                    class="text-red-600 hover:underline text-xs">刪除</button>
+                        </div>
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+
+<!-- Add firmware modal -->
+<div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">新增韌體版本</h3>
+            <button onclick="document.getElementById('add-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <form id="add-firmware-form" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">版本號 *</label>
+                    <input type="text" name="version" required placeholder="1.0.0"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">設備類型 *</label>
+                    <select name="device_type_id" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                        
+                        <option value="1">NAS0806-T</option>
+                        
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Git Hash</label>
+                    <input type="text" name="git_hash" placeholder="full commit hash"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Git Branch</label>
+                    <input type="text" name="git_branch" value="main"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Git Repo URL</label>
+                <input type="text" name="git_repo_url" placeholder="https://github.com/..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Changelog</label>
+                <textarea name="changelog" rows="3" placeholder="版本更新說明..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="flex gap-4">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="is_latest" class="rounded border-gray-300 text-blue-600">
+                    <span class="text-sm text-gray-700">標記為 Latest</span>
+                </label>
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="is_stable" class="rounded border-gray-300 text-green-600">
+                    <span class="text-sm text-gray-700">標記為 Stable</span>
+                </label>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="document.getElementById('add-modal').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">取消</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">新增</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Edit firmware modal -->
+<div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">編輯韌體版本</h3>
+            <button onclick="document.getElementById('edit-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <form id="edit-firmware-form" class="space-y-4">
+            <input type="hidden" name="id" id="edit-fw-id">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">版本號 *</label>
+                    <input type="text" name="version" id="edit-fw-version" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Git Branch</label>
+                    <input type="text" name="git_branch" id="edit-fw-branch"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Git Hash</label>
+                <input type="text" name="git_hash" id="edit-fw-hash"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Git Repo URL</label>
+                <input type="text" name="git_repo_url" id="edit-fw-repo"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Changelog</label>
+                <textarea name="changelog" id="edit-fw-changelog" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="flex gap-4">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="is_latest" id="edit-fw-latest"
+                           class="rounded border-gray-300 text-blue-600">
+                    <span class="text-sm text-gray-700">Latest</span>
+                </label>
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="is_stable" id="edit-fw-stable"
+                           class="rounded border-gray-300 text-green-600">
+                    <span class="text-sm text-gray-700">Stable</span>
+                </label>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="document.getElementById('edit-modal').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">取消</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">儲存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+            </main>
+        </div>
+    </div>
+
+    
+<script>
+document.getElementById('add-firmware-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        device_type_id: parseInt(form.device_type_id.value),
+        version: form.version.value,
+        git_hash: form.git_hash.value || null,
+        git_branch: form.git_branch.value || "main",
+        git_repo_url: form.git_repo_url.value || null,
+        changelog: form.changelog.value || null,
+        is_latest: form.is_latest.checked,
+        is_stable: form.is_stable.checked,
+    };
+    // Auto-generate git_hash_short
+    if (data.git_hash) {
+        data.git_hash_short = data.git_hash.substring(0, 7);
+    }
+    const res = await fetch('/api/firmware', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '新增失敗');
+    }
+});
+
+// Edit firmware
+function openEditFirmware(id, version, gitHash, gitBranch, gitRepoUrl, changelog, isLatest, isStable) {
+    document.getElementById('edit-fw-id').value = id;
+    document.getElementById('edit-fw-version').value = version;
+    document.getElementById('edit-fw-hash').value = gitHash;
+    document.getElementById('edit-fw-branch').value = gitBranch;
+    document.getElementById('edit-fw-repo').value = gitRepoUrl;
+    document.getElementById('edit-fw-changelog').value = changelog;
+    document.getElementById('edit-fw-latest').checked = isLatest;
+    document.getElementById('edit-fw-stable').checked = isStable;
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+document.getElementById('edit-firmware-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const id = document.getElementById('edit-fw-id').value;
+    const data = {
+        version: form.version.value,
+        git_hash: form.git_hash.value || null,
+        git_branch: form.git_branch.value || null,
+        git_repo_url: form.git_repo_url.value || null,
+        changelog: form.changelog.value || null,
+        is_latest: form.is_latest.checked,
+        is_stable: form.is_stable.checked,
+    };
+    if (data.git_hash) {
+        data.git_hash_short = data.git_hash.substring(0, 7);
+    }
+    const res = await fetch(`/api/firmware/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '更新失敗');
+    }
+});
+
+async function markLatest(id) {
+    const res = await fetch(`/api/firmware/${id}/latest`, { method: 'POST' });
+    if (res.ok) window.location.reload();
+    else alert('操作失敗');
+}
+
+async function markStable(id) {
+    const res = await fetch(`/api/firmware/${id}/stable`, { method: 'POST' });
+    if (res.ok) window.location.reload();
+    else alert('操作失敗');
+}
+
+async function deleteFirmware(id, version) {
+    if (!confirm(`確定要刪除韌體版本 ${version}？`)) return;
+    const res = await fetch(`/api/firmware/${id}`, { method: 'DELETE' });
+    if (res.ok) window.location.reload();
+    else alert('刪除失敗');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設備類型 - NAS Server Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="{ sidebarOpen: true }">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col"
+               x-show="sidebarOpen"
+               x-transition>
+            <!-- Logo -->
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-lg font-bold">🖥️ NAS Manager</h1>
+                <p class="text-xs text-gray-400 mt-1">Protech Server Manager</p>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-1">
+                <a href="/admin/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📊</span> Dashboard
+                </a>
+                <a href="/admin/devices/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">💻</span> 設備管理
+                </a>
+                <a href="/admin/device-types/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 bg-gray-800 text-white">
+                    <span class="mr-3">📁</span> 設備類型
+                </a>
+                <a href="/admin/firmware/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📦</span> 韌體版本
+                </a>
+                <a href="/admin/updates/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔄</span> 更新紀錄
+                </a>
+                <a href="/admin/batch-update/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🚀</span> 群發更新
+                </a>
+                <a href="/admin/notifications/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔔</span> 通知設定
+                </a>
+            </nav>
+
+            <!-- User info -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-300">👤 admin</span>
+                    <a href="/admin/logout" class="text-xs text-gray-400 hover:text-white">登出</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 hover:text-gray-900">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h2 class="text-lg font-semibold text-gray-800">設備類型管理</h2>
+                <div class="text-sm text-gray-500">v0.1.0</div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                
+<div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-800">設備類型 (1)</h3>
+        <button onclick="document.getElementById('add-type-modal').classList.remove('hidden')"
+                class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition">
+            + 新增類型
+        </button>
+    </div>
+
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">名稱</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">顯示名稱</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">更新方式</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">健康檢查</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-500">#1</td>
+                    <td class="px-6 py-4 text-sm font-mono text-gray-900">nas</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">NAS0806-T</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">git_pull</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">http</td>
+                    <td class="px-6 py-4 flex gap-2">
+                        <button onclick="openEditModal(1, 'NAS0806-T', 'git_pull', 'http')"
+                                class="text-blue-600 hover:underline text-sm">編輯</button>
+                        <button onclick="deleteType(1, 'nas')"
+                                class="text-red-600 hover:underline text-sm">刪除</button>
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+
+<!-- Add type modal -->
+<div id="add-type-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">新增設備類型</h3>
+            <button onclick="document.getElementById('add-type-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <form id="add-type-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">名稱 (英文代碼) *</label>
+                <input type="text" name="name" required placeholder="nas, esp32, router..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">顯示名稱 *</label>
+                <input type="text" name="display_name" required placeholder="NAS 設備"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">更新方式</label>
+                <select name="update_method"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="git_pull">Git Pull + Build</option>
+                    <option value="ota">OTA (HTTP)</option>
+                    <option value="docker">Docker Pull</option>
+                    <option value="manual">手動</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">健康檢查方式</label>
+                <select name="health_check_method"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="http">HTTP Ping</option>
+                    <option value="ssh">SSH</option>
+                    <option value="icmp">ICMP Ping</option>
+                    <option value="none">不檢查</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="document.getElementById('add-type-modal').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">取消</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">新增</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit type modal -->
+<div id="edit-type-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">編輯設備類型</h3>
+            <button onclick="document.getElementById('edit-type-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <form id="edit-type-form" class="space-y-4">
+            <input type="hidden" name="id" id="edit-id">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">顯示名稱 *</label>
+                <input type="text" name="display_name" id="edit-display-name" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">更新方式</label>
+                <select name="update_method" id="edit-update-method"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="git_pull">Git Pull + Build</option>
+                    <option value="ota">OTA (HTTP)</option>
+                    <option value="docker">Docker Pull</option>
+                    <option value="manual">手動</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">健康檢查方式</label>
+                <select name="health_check_method" id="edit-health-check-method"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="http">HTTP Ping</option>
+                    <option value="ssh">SSH</option>
+                    <option value="icmp">ICMP Ping</option>
+                    <option value="none">不檢查</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="document.getElementById('edit-type-modal').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">取消</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">儲存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+            </main>
+        </div>
+    </div>
+
+    
+<script>
+// Add type
+document.getElementById('add-type-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        name: form.name.value,
+        display_name: form.display_name.value,
+        update_method: form.update_method.value,
+        health_check_method: form.health_check_method.value,
+    };
+    const res = await fetch('/api/device-types', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '新增失敗');
+    }
+});
+
+// Edit type
+function openEditModal(id, displayName, updateMethod, healthCheckMethod) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-display-name').value = displayName;
+    document.getElementById('edit-update-method').value = updateMethod;
+    document.getElementById('edit-health-check-method').value = healthCheckMethod;
+    document.getElementById('edit-type-modal').classList.remove('hidden');
+}
+
+document.getElementById('edit-type-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const id = form.id.value;
+    const data = {
+        display_name: form.display_name.value,
+        update_method: form.update_method.value,
+        health_check_method: form.health_check_method.value,
+    };
+    const res = await fetch(`/api/device-types/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '更新失敗');
+    }
+});
+
+// Delete type
+async function deleteType(id, name) {
+    if (!confirm(`確定要刪除設備類型「${name}」？`)) return;
+    const res = await fetch(`/api/device-types/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '刪除失敗');
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+name: Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest -v --cov=app --cov-report=xml
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost/test
+          SECRET_KEY: test-secret-key
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()

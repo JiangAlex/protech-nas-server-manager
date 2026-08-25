@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>群發更新 - NAS Server Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="{ sidebarOpen: true }">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col"
+               x-show="sidebarOpen"
+               x-transition>
+            <!-- Logo -->
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-lg font-bold">🖥️ NAS Manager</h1>
+                <p class="text-xs text-gray-400 mt-1">Protech Server Manager</p>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-1">
+                <a href="/admin/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📊</span> Dashboard
+                </a>
+                <a href="/admin/devices/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">💻</span> 設備管理
+                </a>
+                <a href="/admin/device-types/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📁</span> 設備類型
+                </a>
+                <a href="/admin/firmware/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📦</span> 韌體版本
+                </a>
+                <a href="/admin/updates/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔄</span> 更新紀錄
+                </a>
+                <a href="/admin/batch-update/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🚀</span> 群發更新
+                </a>
+                <a href="/admin/notifications/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔔</span> 通知設定
+                </a>
+            </nav>
+
+            <!-- User info -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-300">👤 admin</span>
+                    <a href="/admin/logout" class="text-xs text-gray-400 hover:text-white">登出</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 hover:text-gray-900">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h2 class="text-lg font-semibold text-gray-800">群發更新</h2>
+                <div class="text-sm text-gray-500">v0.1.0</div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                
+<div class="space-y-6">
+    <!-- Filter section -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">篩選設備</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                <select id="filter-sku" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="">所有 SKU</option>
+                    
+                    <option value="WW">WW</option>
+                    
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">客戶編號</label>
+                <select id="filter-customer" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="">所有客戶</option>
+                    
+                    <option value="SS">SS</option>
+                    
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">設備類型</label>
+                <select id="filter-type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="">所有類型</option>
+                    
+                    <option value="1">NAS0806-T</option>
+                    
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button onclick="filterDevices()"
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition">
+                    🔍 篩選
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Target version -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">目標版本</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">韌體版本</label>
+                <select id="target-firmware" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="">選擇版本</option>
+                    
+                    <option value="1" data-version="1.0.0" data-hash="976c4a3">
+                        1.0.0 (Latest) (Stable)
+                    </option>
+                    
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button onclick="selectAll()" class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50 mr-2">
+                    全選
+                </button>
+                <button onclick="deselectAll()" class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">
+                    取消全選
+                </button>
+            </div>
+            <div class="flex items-end">
+                <button onclick="batchUpdate()"
+                        class="w-full px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 transition font-medium">
+                    🚀 群發更新 (<span id="selected-count">0</span> 台)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device table -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800">設備列表 (<span id="device-count">1</span>)</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full" id="device-table">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            <input type="checkbox" id="check-all" onchange="toggleAll(this)" class="rounded border-gray-300">
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">名稱</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">客戶</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">MAC</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">目前版本</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    
+                    <tr class="hover:bg-gray-50 device-row"
+                        data-sku="WW"
+                        data-customer="SS"
+                        data-type="1">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" class="device-check rounded border-gray-300"
+                                   value="1" onchange="updateCount()">
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">1</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">WW</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">SS</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 font-mono">c6:e9:34:b5:dc:6d</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 font-mono">1.0.0</td>
+                        <td class="px-6 py-4">
+                            
+                            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">在線</span>
+                            
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Result section (hidden by default) -->
+    <div id="result-section" class="hidden bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">更新結果</h3>
+        <div id="result-content"></div>
+    </div>
+</div>
+
+            </main>
+        </div>
+    </div>
+
+    
+<script>
+function filterDevices() {
+    const sku = document.getElementById('filter-sku').value;
+    const customer = document.getElementById('filter-customer').value;
+    const type = document.getElementById('filter-type').value;
+
+    const rows = document.querySelectorAll('.device-row');
+    let count = 0;
+    rows.forEach(row => {
+        let show = true;
+        if (sku && row.dataset.sku !== sku) show = false;
+        if (customer && row.dataset.customer !== customer) show = false;
+        if (type && row.dataset.type !== type) show = false;
+        row.style.display = show ? '' : 'none';
+        if (show) count++;
+    });
+    document.getElementById('device-count').textContent = count;
+    updateCount();
+}
+
+function toggleAll(el) {
+    const rows = document.querySelectorAll('.device-row');
+    rows.forEach(row => {
+        if (row.style.display !== 'none') {
+            row.querySelector('.device-check').checked = el.checked;
+        }
+    });
+    updateCount();
+}
+
+function selectAll() {
+    document.getElementById('check-all').checked = true;
+    toggleAll(document.getElementById('check-all'));
+}
+
+function deselectAll() {
+    document.getElementById('check-all').checked = false;
+    toggleAll(document.getElementById('check-all'));
+}
+
+function updateCount() {
+    const checked = document.querySelectorAll('.device-check:checked');
+    document.getElementById('selected-count').textContent = checked.length;
+}
+
+async function batchUpdate() {
+    const firmware = document.getElementById('target-firmware');
+    if (!firmware.value) {
+        alert('請選擇目標韌體版本');
+        return;
+    }
+
+    const checked = document.querySelectorAll('.device-check:checked');
+    if (checked.length === 0) {
+        alert('請選擇至少一台設備');
+        return;
+    }
+
+    const deviceIds = Array.from(checked).map(el => parseInt(el.value));
+    const selectedOption = firmware.options[firmware.selectedIndex];
+    const version = selectedOption.dataset.version;
+
+    if (!confirm(`確定要將 ${deviceIds.length} 台設備更新到 ${version}？`)) return;
+
+    const resultSection = document.getElementById('result-section');
+    const resultContent = document.getElementById('result-content');
+    resultSection.classList.remove('hidden');
+    resultContent.innerHTML = '<p class="text-gray-500">正在發送更新指令...</p>';
+
+    try {
+        const res = await fetch('/api/ota/batch/trigger', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                device_ids: deviceIds,
+                firmware_id: parseInt(firmware.value),
+            }),
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            resultContent.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded p-4">
+                    <p class="text-green-800 font-medium">✅ 已發送更新指令</p>
+                    <p class="text-green-600 text-sm mt-1">目標版本：${version}，共 ${deviceIds.length} 台設備</p>
+                    <p class="text-green-600 text-sm">結果將記錄在「更新紀錄」頁面</p>
+                </div>
+            `;
+        } else {
+            const err = await res.json();
+            resultContent.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded p-4">
+                    <p class="text-red-800 font-medium">❌ 發送失敗</p>
+                    <p class="text-red-600 text-sm mt-1">${err.detail || '未知錯誤'}</p>
+                </div>
+            `;
+        }
+    } catch (e) {
+        resultContent.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded p-4">
+                <p class="text-red-800 font-medium">❌ 請求失敗</p>
+                <p class="text-red-600 text-sm mt-1">${e.message}</p>
+            </div>
+        `;
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,6 +1,14 @@
 # Protech NAS Server Manager
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg?logo=docker)](https://www.docker.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-green.svg?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Status](https://img.shields.io/badge/status-active-success.svg)]()
+
 NAS 系統更新 Server — 管理多台 Protech NAS 設備的軟體版本、推送更新、監控狀態，並透過多通道通知管理員。
+
+如果您覺得這個專案有幫助，歡迎給一顆 ⭐ Star！
 
 ## 功能特色
 
@@ -48,9 +56,11 @@ graph TB
     UM --> NAS1
     UM --> NAS2
     UM --> NASn
+
     SM --> NAS1
     SM --> NAS2
     SM --> NASn
+
     NF --> TG
     NF --> LINE
     NF --> DC
@@ -127,11 +137,30 @@ protech-nas-server-manager/
 - [部署指南](docs/deployment.md)
 - [開發任務](docs/tasks/)
 
-## Communication
+## 參與貢獻
 
-- **技術解釋**使用「繁體中文」
-- **變數名稱**、**函數名稱**與**代碼註釋**必須保持英文
+歡迎提交 Pull Request 或回報 Issue！
+
+1. Fork 本專案
+2. 建立新分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 創建 Pull Request
+
+## 行為準則
+
+請閱讀 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) 了解參與此專案應遵守的行為標準。
+
+## 社群與討論
+
+- 💬 加入 [Discord 伺服器](https://discord.gg/your-invite-code)（如有）
+- 🐛 回報 Bug 或提出功能請求：[Issue Tracker](https://github.com/your-org/protech-nas-server-manager/issues)
+- 📖 查看更新與公告
 
 ## License
 
-Private - Internal Use Only
+本專案採用 MIT License — 詳情請參閱 [LICENSE](LICENSE) 檔案。
+
+---
+
+⭐ 如果這個專案對您有幫助，請給我一顆 Star！謝謝！

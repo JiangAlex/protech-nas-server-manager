@@ -1,14 +1,88 @@
-{% extends "base.html" %}
-{% block title %}{{ device.name }}{% endblock %}
-{% block nav_devices %}bg-gray-800 text-white{% endblock %}
-{% block page_title %}設備詳情 - {{ device.name }}{% endblock %}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1 - NAS Server Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="{ sidebarOpen: true }">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col"
+               x-show="sidebarOpen"
+               x-transition>
+            <!-- Logo -->
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-lg font-bold">🖥️ NAS Manager</h1>
+                <p class="text-xs text-gray-400 mt-1">Protech Server Manager</p>
+            </div>
 
-{% block content %}
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-1">
+                <a href="/admin/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📊</span> Dashboard
+                </a>
+                <a href="/admin/devices/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 bg-gray-800 text-white">
+                    <span class="mr-3">💻</span> 設備管理
+                </a>
+                <a href="/admin/device-types/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📁</span> 設備類型
+                </a>
+                <a href="/admin/firmware/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📦</span> 韌體版本
+                </a>
+                <a href="/admin/updates/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔄</span> 更新紀錄
+                </a>
+                <a href="/admin/batch-update/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🚀</span> 群發更新
+                </a>
+                <a href="/admin/notifications/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔔</span> 通知設定
+                </a>
+            </nav>
+
+            <!-- User info -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-300">👤 admin</span>
+                    <a href="/admin/logout" class="text-xs text-gray-400 hover:text-white">登出</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 hover:text-gray-900">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h2 class="text-lg font-semibold text-gray-800">設備詳情 - 1</h2>
+                <div class="text-sm text-gray-500">v0.1.0</div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                
 <!-- Breadcrumb -->
 <nav class="mb-4 text-sm text-gray-500">
     <a href="/admin/devices/" class="hover:text-blue-600">設備管理</a>
     <span class="mx-2">›</span>
-    <span class="text-gray-800">{{ device.name }}</span>
+    <span class="text-gray-800">1</span>
 </nav>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -20,18 +94,14 @@
                 <h3 class="text-lg font-semibold text-gray-800">基本資訊</h3>
                 <div class="flex gap-2">
                     <span class="px-3 py-1 text-sm rounded-full
-                        {% if device.status == 'online' %}bg-green-100 text-green-800
-                        {% elif device.status == 'offline' %}bg-red-100 text-red-800
-                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                        {% if device.status == 'online' %}🟢 在線
-                        {% elif device.status == 'offline' %}🔴 離線
-                        {% else %}🟡 未知{% endif %}
+                        bg-green-100 text-green-800
+                        ">
+                        🟢 在線
+                        
                     </span>
-                    {% if device.is_active %}
+                    
                     <span class="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-800">啟用</span>
-                    {% else %}
-                    <span class="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-600">已停用</span>
-                    {% endif %}
+                    
                 </div>
             </div>
 
@@ -39,19 +109,19 @@
                 <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <div>
                         <dt class="text-sm font-medium text-gray-500">設備類型</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ device.device_type.display_name }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900">NAS0806-T</dd>
                     </div>
                     <div>
                         <dt class="text-sm font-medium text-gray-500">目前版本</dt>
-                        <dd class="mt-1 text-sm text-gray-900 font-mono">{{ device.current_version or '-' }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900 font-mono">1.0.0</dd>
                     </div>
                     <div>
                         <dt class="text-sm font-medium text-gray-500">Git Hash</dt>
-                        <dd class="mt-1 text-sm text-gray-900 font-mono">{{ device.current_git_hash[:8] if device.current_git_hash else '-' }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900 font-mono">976c4a3</dd>
                     </div>
                     <div>
                         <dt class="text-sm font-medium text-gray-500">部署模式</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ device.deploy_mode }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900">systemd</dd>
                     </div>
                 </dl>
             </div>
@@ -66,29 +136,29 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">設備名稱</label>
-                        <input type="text" name="name" value="{{ device.name }}"
+                        <input type="text" name="name" value="1"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">IP 位址</label>
-                        <input type="text" name="ip_address" value="{{ device.ip_address or '' }}"
+                        <input type="text" name="ip_address" value="192.168.131.150"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
-                        <input type="text" name="sku" value="{{ device.sku or '' }}"
+                        <input type="text" name="sku" value="WW"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">客戶編號</label>
-                        <input type="text" name="customer_id" value="{{ device.customer_id or '' }}"
+                        <input type="text" name="customer_id" value="SS"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">MAC Address</label>
-                        <input type="text" name="mac_address" value="{{ device.mac_address or '' }}"
+                        <input type="text" name="mac_address" value="c6:e9:34:b5:dc:6d"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                                placeholder="AA:BB:CC:DD:EE:FF">
                     </div>
@@ -96,28 +166,28 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">SSH Host</label>
-                        <input type="text" name="ssh_host" value="{{ device.ssh_host or '' }}"
+                        <input type="text" name="ssh_host" value="192.168.131.150"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">SSH Port</label>
-                        <input type="number" name="ssh_port" value="{{ device.ssh_port }}"
+                        <input type="number" name="ssh_port" value="22"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">SSH User</label>
-                        <input type="text" name="ssh_user" value="{{ device.ssh_user or '' }}"
+                        <input type="text" name="ssh_user" value="protech"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">說明</label>
                     <textarea name="description" rows="2"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">{{ device.description or '' }}</textarea>
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">辦公室 NAS</textarea>
                 </div>
                 <div class="flex items-center gap-4">
                     <label class="flex items-center gap-2">
-                        <input type="checkbox" name="is_active" {{ 'checked' if device.is_active }}
+                        <input type="checkbox" name="is_active" checked
                                class="rounded border-gray-300 text-blue-600">
                         <span class="text-sm text-gray-700">啟用</span>
                     </label>
@@ -142,23 +212,23 @@
             <div class="p-6 space-y-3">
                 <div>
                     <dt class="text-xs font-medium text-gray-500">Host</dt>
-                    <dd class="text-sm text-gray-900 font-mono">{{ device.ssh_host or device.ip_address or '-' }}</dd>
+                    <dd class="text-sm text-gray-900 font-mono">192.168.131.150</dd>
                 </div>
                 <div>
                     <dt class="text-xs font-medium text-gray-500">Port</dt>
-                    <dd class="text-sm text-gray-900">{{ device.ssh_port }}</dd>
+                    <dd class="text-sm text-gray-900">22</dd>
                 </div>
                 <div>
                     <dt class="text-xs font-medium text-gray-500">User</dt>
-                    <dd class="text-sm text-gray-900">{{ device.ssh_user or '-' }}</dd>
+                    <dd class="text-sm text-gray-900">protech</dd>
                 </div>
-                {% if device.ssh_host or device.ip_address %}
+                
                 <div class="pt-2">
                     <code class="text-xs bg-gray-100 px-2 py-1 rounded block">
-                        ssh {{ device.ssh_user or 'user' }}@{{ device.ssh_host or device.ip_address }} -p {{ device.ssh_port }}
+                        ssh protech@192.168.131.150 -p 22
                     </code>
                 </div>
-                {% endif %}
+                
             </div>
         </div>
 
@@ -176,12 +246,12 @@
                         disabled title="尚未實作">
                     ⏪ Rollback
                 </button>
-                <button id="health-check-btn"
-                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition">
+                <button class="w-full px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition"
+                        disabled title="尚未實作">
                     🩺 健康檢查
                 </button>
                 <hr class="my-2">
-                <button onclick="deleteDevice({{ device.id }})"
+                <button onclick="deleteDevice(1)"
                         class="w-full px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 transition">
                     🗑️ 停用設備
                 </button>
@@ -191,16 +261,19 @@
         <!-- Timestamps -->
         <div class="bg-white rounded-lg shadow">
             <div class="p-6 space-y-2 text-sm text-gray-500">
-                <p>建立時間：{{ device.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                <p>最後更新：{{ device.last_update_at.strftime('%Y-%m-%d %H:%M') if device.last_update_at else '-' }}</p>
-                <p>最後上線：{{ device.last_seen_at.strftime('%Y-%m-%d %H:%M') if device.last_seen_at else '-' }}</p>
+                <p>建立時間：2026-08-06 01:28</p>
+                <p>最後更新：2026-08-06 07:12</p>
+                <p>最後上線：2026-08-06 07:12</p>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+            </main>
+        </div>
+    </div>
+
+    
 <script>
 // Edit device form
 document.getElementById('edit-device-form').addEventListener('submit', async (e) => {
@@ -218,7 +291,7 @@ document.getElementById('edit-device-form').addEventListener('submit', async (e)
         description: form.description.value || null,
         is_active: form.is_active.checked,
     };
-    const res = await fetch(`/api/devices/{{ device.id }}`, {
+    const res = await fetch(`/api/devices/1`, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data),
@@ -241,26 +314,7 @@ async function deleteDevice(id) {
         alert('操作失敗');
     }
 }
-
-// Health check
-document.getElementById('health-check-btn').addEventListener('click', async () => {
-    const btn = document.getElementById('health-check-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ 檢查中...';
-    try {
-        const res = await fetch(`/api/devices/{{ device.id }}/health-check`, { method: 'POST' });
-        const data = await res.json();
-        if (data.status === 'online') {
-            alert(`🟢 在線\n方法: ${data.method}\n延遲: ${data.latency_ms} ms\n${data.message}`);
-        } else {
-            alert(`🔴 離線\n方法: ${data.method}\n${data.message}`);
-        }
-    } catch (e) {
-        alert('健康檢查請求失敗: ' + e.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '🩺 健康檢查';
-    }
-});
 </script>
-{% endblock %}
+
+</body>
+</html>

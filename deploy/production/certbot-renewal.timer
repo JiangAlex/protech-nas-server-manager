@@ -1,0 +1,14 @@
+[Unit]
+Description=Let's Encrypt SSL Certificate Renewal Timer
+Documentation=https://eff.org/letsencrypt
+
+[Timer]
+# Run twice a day at staggered times to spread load on Let's Encrypt
+OnCalendar=*-*-* 03,15:00
+# Add randomized delay up to 5 minutes to avoid thundering herd
+RandomizedDelaySec=300
+# Run immediately after boot if previous run was missed (e.g. server was off)
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>更新紀錄 - NAS Server Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="{ sidebarOpen: true }">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col"
+               x-show="sidebarOpen"
+               x-transition>
+            <!-- Logo -->
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-lg font-bold">🖥️ NAS Manager</h1>
+                <p class="text-xs text-gray-400 mt-1">Protech Server Manager</p>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-1">
+                <a href="/admin/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📊</span> Dashboard
+                </a>
+                <a href="/admin/devices/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">💻</span> 設備管理
+                </a>
+                <a href="/admin/device-types/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📁</span> 設備類型
+                </a>
+                <a href="/admin/firmware/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📦</span> 韌體版本
+                </a>
+                <a href="/admin/updates/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 bg-gray-800 text-white">
+                    <span class="mr-3">🔄</span> 更新紀錄
+                </a>
+                <a href="/admin/batch-update/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🚀</span> 群發更新
+                </a>
+                <a href="/admin/notifications/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔔</span> 通知設定
+                </a>
+            </nav>
+
+            <!-- User info -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-300">👤 admin</span>
+                    <a href="/admin/logout" class="text-xs text-gray-400 hover:text-white">登出</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 hover:text-gray-900">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h2 class="text-lg font-semibold text-gray-800">更新紀錄</h2>
+                <div class="text-sm text-gray-500">v0.1.0</div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                
+<div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-800">更新歷史 (6)</h3>
+    </div>
+
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">設備</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">版本變更</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">觸發方式</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">時間</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">錯誤訊息</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-500">#6</td>
+                    <td class="px-6 py-4 text-sm">
+                        <a href="/admin/devices/1/" class="text-blue-600 hover:underline">
+                            1
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">
+                        1.0.0 → 1.0.0
+                    </td>
+                    <td class="px-6 py-4">
+                        
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">✅ 完成</span>
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        💻 設備
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        2026-08-06 07:12
+                    </td>
+                    <td class="px-6 py-4 text-sm text-red-600">
+                        -
+                    </td>
+                </tr>
+                
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-500">#5</td>
+                    <td class="px-6 py-4 text-sm">
+                        <a href="/admin/devices/1/" class="text-blue-600 hover:underline">
+                            1
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">
+                        1.0.0 → 1.0.0
+                    </td>
+                    <td class="px-6 py-4">
+                        
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">✅ 完成</span>
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        💻 設備
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        2026-08-06 06:50
+                    </td>
+                    <td class="px-6 py-4 text-sm text-red-600">
+                        -
+                    </td>
+                </tr>
+                
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-500">#4</td>
+                    <td class="px-6 py-4 text-sm">
+                        <a href="/admin/devices/1/" class="text-blue-600 hover:underline">
+                            1
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">
+                        1.0.0 → 1.0.0
+                    </td>
+                    <td class="px-6 py-4">
+                        
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">✅ 完成</span>
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        💻 設備
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        2026-08-06 06:34
+                    </td>
+                    <td class="px-6 py-4 text-sm text-red-600">
+                        -
+                    </td>
+                </tr>
+                
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-500">#3</td>
+                    <td class="px-6 py-4 text-sm">
+                        <a href="/admin/devices/1/" class="text-blue-600 hover:underline">
+                            1
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">
+                        1.0.0 → 1.0.0
+                    </td>
+                    <td class="px-6 py-4">
+                        
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">✅ 完成</span>
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        💻 設備
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        2026-08-06 03:38
+                    </td>
+                    <td class="px-6 py-4 text-sm text-red-600">
+                        -
+                    </td>
+                </tr>
+                
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-500">#2</td>
+                    <td class="px-6 py-4 text-sm">
+                        <a href="/admin/devices/1/" class="text-blue-600 hover:underline">
+                            1
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">
+                        1.0.0 → 1.0.0
+                    </td>
+                    <td class="px-6 py-4">
+                        
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">⏪ 已回滾</span>
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        💻 設備
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        2026-08-06 03:29
+                    </td>
+                    <td class="px-6 py-4 text-sm text-red-600">
+                        Service restart failed: 
+                    </td>
+                </tr>
+                
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-500">#1</td>
+                    <td class="px-6 py-4 text-sm">
+                        <a href="/admin/devices/1/" class="text-blue-600 hover:underline">
+                            1
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">
+                        1.0.0 → 1.0.0
+                    </td>
+                    <td class="px-6 py-4">
+                        
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">⏪ 已回滾</span>
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        💻 設備
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        2026-08-06 03:19
+                    </td>
+                    <td class="px-6 py-4 text-sm text-red-600">
+                        Service restart failed: 
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+
+            </main>
+        </div>
+    </div>
+
+    
+</body>
+</html>

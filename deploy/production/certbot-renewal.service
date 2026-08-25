@@ -1,0 +1,13 @@
+[Unit]
+Description=Let's Encrypt SSL Certificate Renewal
+Documentation=https://eff.org/letsencrypt
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# --quiet: no output unless renewal actually happens
+# --deploy-hook: reloads nginx only when a cert is renewed
+ExecStart=/usr/bin/certbot renew --quiet --deploy-hook "systemctl reload nginx"
+# Run certbot as root so it can write to /etc/letsencrypt
+PrivateTmp=false

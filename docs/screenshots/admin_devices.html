@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設備管理 - NAS Server Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="{ sidebarOpen: true }">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col"
+               x-show="sidebarOpen"
+               x-transition>
+            <!-- Logo -->
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-lg font-bold">🖥️ NAS Manager</h1>
+                <p class="text-xs text-gray-400 mt-1">Protech Server Manager</p>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-1">
+                <a href="/admin/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📊</span> Dashboard
+                </a>
+                <a href="/admin/devices/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 bg-gray-800 text-white">
+                    <span class="mr-3">💻</span> 設備管理
+                </a>
+                <a href="/admin/device-types/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📁</span> 設備類型
+                </a>
+                <a href="/admin/firmware/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">📦</span> 韌體版本
+                </a>
+                <a href="/admin/updates/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔄</span> 更新紀錄
+                </a>
+                <a href="/admin/batch-update/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🚀</span> 群發更新
+                </a>
+                <a href="/admin/notifications/"
+                   class="flex items-center px-3 py-2 rounded-lg text-sm hover:bg-gray-800 ">
+                    <span class="mr-3">🔔</span> 通知設定
+                </a>
+            </nav>
+
+            <!-- User info -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-300">👤 admin</span>
+                    <a href="/admin/logout" class="text-xs text-gray-400 hover:text-white">登出</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 hover:text-gray-900">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h2 class="text-lg font-semibold text-gray-800">設備管理</h2>
+                <div class="text-sm text-gray-500">v0.1.0</div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                
+<div class="bg-white rounded-lg shadow">
+    <!-- Header with add button -->
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-800">所有設備 (1)</h3>
+        <button onclick="document.getElementById('add-modal').classList.remove('hidden')"
+                class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition">
+            + 新增設備
+        </button>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex gap-4 items-center text-sm">
+        <span class="text-gray-500">篩選：</span>
+        <select id="filter-type" class="border border-gray-300 rounded px-2 py-1 text-sm">
+            <option value="">所有類型</option>
+            
+            <option value="1">NAS0806-T</option>
+            
+        </select>
+        <select id="filter-status" class="border border-gray-300 rounded px-2 py-1 text-sm">
+            <option value="">所有狀態</option>
+            <option value="online">在線</option>
+            <option value="offline">離線</option>
+            <option value="unknown">未知</option>
+        </select>
+    </div>
+
+    <!-- Device table -->
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">名稱</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">客戶</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">MAC</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP 位址</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">版本</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-500">#1</td>
+                    <td class="px-6 py-4">
+                        <a href="/admin/devices/1/" class="text-blue-600 hover:underline font-medium">
+                            1
+                        </a>
+                        
+                        <p class="text-xs text-gray-400 mt-1">辦公室 NAS</p>
+                        
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">WW</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">SS</td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">c6:e9:34:b5:dc:6d</td>
+                    <td class="px-6 py-4 text-sm text-gray-600 font-mono">192.168.131.150</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">1.0.0</td>
+                    <td class="px-6 py-4">
+                        
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">在線</span>
+                        
+                    </td>
+                    <td class="px-6 py-4">
+                        <a href="/admin/devices/1/"
+                           class="text-blue-600 hover:underline text-sm">詳情</a>
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+
+<!-- Add device modal -->
+<div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">新增設備</h3>
+            <button onclick="document.getElementById('add-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <form id="add-device-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">設備名稱 *</label>
+                <input type="text" name="name" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">設備類型 *</label>
+                <select name="device_type_id" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                    
+                    <option value="1">NAS0806-T</option>
+                    
+                </select>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                    <input type="text" name="sku"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                           placeholder="PT-NAS-001">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">客戶編號</label>
+                    <input type="text" name="customer_id"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                           placeholder="CUST-001">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">MAC Address</label>
+                    <input type="text" name="mac_address"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                           placeholder="AA:BB:CC:DD:EE:FF">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">IP 位址</label>
+                    <input type="text" name="ip_address"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                           placeholder="192.168.1.x">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">SSH Port</label>
+                    <input type="number" name="ssh_port" value="22"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">SSH Host</label>
+                <input type="text" name="ssh_host"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">SSH User</label>
+                <input type="text" name="ssh_user"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                       placeholder="protech">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">說明</label>
+                <textarea name="description" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="document.getElementById('add-modal').classList.add('hidden')"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">取消</button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">新增</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+            </main>
+        </div>
+    </div>
+
+    
+<script>
+document.getElementById('add-device-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        name: form.name.value,
+        device_type_id: parseInt(form.device_type_id.value),
+        sku: form.sku.value || null,
+        customer_id: form.customer_id.value || null,
+        mac_address: form.mac_address.value || null,
+        ip_address: form.ip_address.value || null,
+        ssh_host: form.ssh_host.value || null,
+        ssh_port: parseInt(form.ssh_port.value) || 22,
+        ssh_user: form.ssh_user.value || null,
+        description: form.description.value || null,
+    };
+    const res = await fetch('/api/devices', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (res.ok) {
+        window.location.reload();
+    } else {
+        const err = await res.json();
+        alert(err.detail || '新增失敗');
+    }
+});
+</script>
+
+</body>
+</html>

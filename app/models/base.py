@@ -2,8 +2,44 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import DateTime, Text, TypeDecorator, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+class JSONB(TypeDecorator):
+    """JSONB that renders as TEXT on SQLite, JSONB on PostgreSQL.
+
+    Usage: replace `from sqlalchemy.dialects.postgresql import JSONB` with
+    `from app.models.base import JSONB` in all model files.
+    """
+
+    impl = Text
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "sqlite":
+            return dialect.type_descriptor(Text())
+        if dialect.name == "postgresql":
+            from sqlalchemy.dialects.postgresql import JSONB as PGJSONB
+
+            return dialect.type_descriptor(PGJSONB())
+        from sqlalchemy import JSON
+
+        return dialect.type_descriptor(JSON())
+
+    def process_bind_param(self, value, dialect):
+        if dialect.name == "sqlite":
+            import json
+
+            return json.dumps(value) if value is not None else None
+        return value
+
+    def process_result_value(self, value, dialect):
+        if dialect.name == "sqlite":
+            import json
+
+            return json.loads(value) if isinstance(value, str) else value
+        return value
 
 
 class Base(DeclarativeBase):
