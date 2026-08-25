@@ -15,6 +15,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
 from app.database import engine
+from app.services.scheduler import start_scheduler, stop_scheduler
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -32,9 +33,13 @@ async def lifespan(app: FastAPI):
         logger.error("database_connection_failed", error=str(e))
         raise
 
+    # Start scheduler
+    start_scheduler()
+
     yield
 
-    # Shutdown: dispose engine
+    # Shutdown: stop scheduler and dispose engine
+    stop_scheduler()
     await engine.dispose()
     logger.info("database_disconnected")
 
@@ -60,6 +65,7 @@ from app.routers.ota_nas import router as ota_nas_router  # noqa: E402
 from app.routers.ota_esp32 import router as ota_esp32_router  # noqa: E402
 from app.routers.ota_batch import router as ota_batch_router  # noqa: E402
 from app.routers.web import router as web_router  # noqa: E402
+from app.routers.metrics import router as metrics_router  # noqa: E402
 
 app.include_router(device_types_router)
 app.include_router(devices_router)
@@ -68,6 +74,7 @@ app.include_router(ota_nas_router)
 app.include_router(ota_esp32_router)
 app.include_router(ota_batch_router)
 app.include_router(web_router)
+app.include_router(metrics_router)
 
 
 @app.get("/health")
