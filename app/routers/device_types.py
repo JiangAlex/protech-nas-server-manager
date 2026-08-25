@@ -53,6 +53,7 @@ async def update_device_type(
     device_type = await device_service.update_device_type(db, device_type_id, data)
     if not device_type:
         raise HTTPException(status_code=404, detail="Device type not found")
+    await db.commit()
     return device_type
 
 
