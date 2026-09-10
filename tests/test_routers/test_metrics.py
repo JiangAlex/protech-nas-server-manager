@@ -48,6 +48,86 @@ async def test_get_device_metrics_no_data(client: AsyncClient):
     assert "No metrics found" in resp.json()["detail"]
 
 
+# ── POST /api/devices/{id}/metrics/refresh ────────────────────────────────────
+
+
+def _fake_metrics() -> dict:
+    """Build a valid metrics dict as returned by collect_device_metrics."""
+    from datetime import datetime, timezone
+
+    return {
+        "cpu_percent": 12.5,
+        "memory_percent": 48.0,
+        "disk_percent": 30.0,
+        "network_io": {"rx_bytes": 1000, "tx_bytes": 2000},
+        "temperature": {"cpu": 45.0, "ambient": None},
+        "raw_json": {"top": "..."},
+        "collected_at": datetime.now(timezone.utc),
+    }
+
+
+@pytest.mark.asyncio
+async def test_refresh_metrics_not_found(client: AsyncClient):
+    """POST refresh on unknown device returns 404."""
+    resp = await client.post("/api/devices/99999/metrics/refresh")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_refresh_metrics_no_ssh_config(client: AsyncClient):
+    """POST refresh returns 400 when the device has no SSH configuration."""
+    dt_id = await _create_device_type(client)
+    device = await _create_device(
+        client, dt_id, name="No-SSH-DUT", ssh_host=None, ssh_user=None, ip_address=None
+    )
+    resp = await client.post(f"/api/devices/{device['id']}/metrics/refresh")
+    assert resp.status_code == 400
+    assert "SSH configuration" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_refresh_metrics_ssh_failure(client: AsyncClient, monkeypatch):
+    """POST refresh returns 502 when SSH collection fails (returns None)."""
+    from app.services import metrics_service
+
+    async def _fail(device):
+        return None
+
+    monkeypatch.setattr(metrics_service, "collect_device_metrics", _fail)
+
+    dt_id = await _create_device_type(client)
+    device = await _create_device(client, dt_id, name="SSH-Fail-DUT")
+    resp = await client.post(f"/api/devices/{device['id']}/metrics/refresh")
+    assert resp.status_code == 502
+    assert "Failed to collect metrics" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_refresh_metrics_success(client: AsyncClient, monkeypatch):
+    """POST refresh collects, persists, and returns a snapshot; then GET returns it."""
+    from app.services import metrics_service
+
+    async def _ok(device):
+        return _fake_metrics()
+
+    monkeypatch.setattr(metrics_service, "collect_device_metrics", _ok)
+
+    dt_id = await _create_device_type(client)
+    device = await _create_device(client, dt_id, name="Refresh-OK-DUT")
+
+    resp = await client.post(f"/api/devices/{device['id']}/metrics/refresh")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["cpu_percent"] == 12.5
+    assert body["memory_percent"] == 48.0
+    assert body["device_id"] == device["id"]
+
+    # The refreshed snapshot is now retrievable via the read endpoint.
+    resp2 = await client.get(f"/api/devices/{device['id']}/metrics")
+    assert resp2.status_code == 200
+    assert resp2.json()["cpu_percent"] == 12.5
+
+
 # ── GET /api/devices/{id}/metrics/history ─────────────────────────────────────
 
 

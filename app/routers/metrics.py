@@ -88,6 +88,41 @@ async def get_device_metrics(
     return snapshot
 
 
+@router.post(
+    "/api/devices/{device_id}/metrics/refresh",
+    response_model=MetricsSnapshotResponse,
+)
+async def refresh_device_metrics(
+    device_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Collect metrics from the device in real time via SSH, persist, and return.
+
+    Unlike ``GET /metrics`` (which only reads the latest stored snapshot),
+    this endpoint connects to the device on demand so the "health check"
+    button reflects the current CPU / memory / disk state without waiting
+    for the 5-minute scheduler cycle.
+    """
+    device = await _get_device_or_404(db, device_id)
+
+    if not (device.ssh_host or device.ip_address) or not device.ssh_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Device has no SSH configuration (ssh_host/ip_address and ssh_user required)",
+        )
+
+    metrics = await metrics_service.collect_device_metrics(device)
+    if metrics is None:
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to collect metrics from device via SSH",
+        )
+
+    snapshot = await metrics_service.save_metrics_snapshot(db, device_id, metrics)
+    await db.flush()
+    return snapshot
+
+
 @router.get("/api/devices/{device_id}/metrics/history", response_model=list[MetricsSnapshotResponse])
 async def get_device_metrics_history(
     device_id: int,
