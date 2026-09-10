@@ -1,19 +1,17 @@
-"""Metrics collection service — SSH-based DUT monitoring.
+"""Metrics collection service — HTTP-based DUT monitoring (phase 1, no auth).
 
-Uses asyncssh to connect to DUT devices and collect:
-  - CPU %  (top -bn1)
-  - Memory % (free)
-  - Disk %  (df -h /)
-  - Network I/O  (/proc/net/dev)
-  - Temperature  (thermal_zone0)
+Calls the client's unauthenticated GET /api/dashboard/metrics endpoint and maps:
+  - cpu.percent          → cpu_percent
+  - memory.percent       → memory_percent
+  - disk.percent         → disk_percent
+  - network.bytes_recv_mb / bytes_sent_mb → network_io (bytes)
+  - temperatures.<label>.current           → temperature (cpu)
 """
 
-import asyncio
-import re
+import httpx
 from datetime import datetime, timezone
 from typing import Any
 
-import asyncssh
 import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,115 +22,99 @@ from app.models.metrics_snapshot import MetricsSnapshot
 logger = structlog.get_logger()
 
 
-# ── Pydantic-style snapshot dict (used for validation) ──────────────────────
+def _find_cpu_temperature(temperatures: dict) -> float:
+    """Pick the first temperature label containing 'cpu' (case-insensitive).
 
-CPU_RE = re.compile(r"Cpu\(s\):.*?([0-9.]+).*?%id")
-MEM_RE = re.compile(r"Mem:\s+\S+\s+\S+\s+([0-9.]+)\s+([0-9.]+)")
-DISK_RE = re.compile(r"/dev/\S+\s+[0-9.]+[KMGT]?\s+[0-9.]+[KMGT]?\s+[0-9.]+[KMGT]?\s+([0-9.]+)%")
-NET_RE = re.compile(r"eth0:\s+(\d+)\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+)")
+    The client reports temperatures in milli-degrees (e.g. 45000 = 45.0 °C).
+    This helper converts to degrees before returning.
 
-
-def parse_top_output(raw: str) -> float:
-    m = CPU_RE.search(raw)
-    if m:
-        return 100.0 - float(m.group(1))
-    return 0.0
-
-
-def parse_free_output(raw: str) -> float:
-    m = MEM_RE.search(raw)
-    if m:
-        total = float(m.group(1))
-        available = float(m.group(2))
-        if total > 0:
-            return (1.0 - available / total) * 100.0
-    return 0.0
-
-
-def parse_df_output(raw: str) -> float:
-    m = DISK_RE.search(raw)
-    if m:
-        return float(m.group(1))
-    return 0.0
-
-
-def parse_netdev_output(raw: str) -> dict[str, int]:
-    m = NET_RE.search(raw)
-    if m:
-        return {"rx_bytes": int(m.group(1)), "tx_bytes": int(m.group(2))}
-    return {"rx_bytes": 0, "tx_bytes": 0}
-
-
-def parse_temp_output(raw: str) -> float:
-    try:
-        return float(raw.strip()) / 1000.0
-    except (ValueError, TypeError):
+    Returns 0.0 if no CPU-related label is found.
+    """
+    if not temperatures:
         return 0.0
+    for label, entry in temperatures.items():
+        if "cpu" in label.lower():
+            try:
+                return round(float(entry["current"]) / 1000.0, 2)
+            except (TypeError, ValueError):
+                continue
+    # Fallback: return the first entry's current value (in degrees)
+    first = next(iter(temperatures.values()), None)
+    if first:
+        try:
+            return round(float(first["current"]) / 1000.0, 2)
+        except (TypeError, ValueError):
+            pass
+    return 0.0
 
 
 async def collect_device_metrics(device: Device) -> dict[str, Any] | None:
-    """Connect to DUT via SSH and collect all metrics.
+    """Call the DUT's unauthenticated /api/dashboard/metrics endpoint via HTTP.
 
     Returns a dict with keys: cpu_percent, memory_percent, disk_percent,
     network_io (rx_bytes/tx_bytes), temperature (cpu/ambient), raw_json,
     collected_at (UTC datetime).
 
-    Returns None if the device has no SSH configuration or connection fails.
+    Returns None if api_base_url is not set or the HTTP request fails.
     """
-    ssh_host = device.ssh_host or device.ip_address
-    if not ssh_host or not device.ssh_user:
-        logger.warning("metrics_no_ssh_config", device_id=device.id, device_name=device.name)
+    if not device.api_base_url:
+        logger.warning("metrics_no_api_base_url", device_id=device.id, device_name=device.name)
         return None
 
-    commands = {
-        "top": "top -bn1 | head -5",
-        "free": "free | grep Mem",
-        "df": "df -h / | tail -1",
-        "netdev": "cat /proc/net/dev | grep eth0",
-        "temp": "cat /sys/class/thermal/thermal_zone0/temp",
-    }
-
-    results: dict[str, str] = {}
+    url = f"{device.api_base_url.rstrip('/')}/api/dashboard/metrics"
+    timeout = httpx.Timeout(10.0, connect=5.0)
 
     try:
-        async with asyncssh.connect(
-            host=ssh_host,
-            port=device.ssh_port,
-            username=device.ssh_user,
-            known_hosts=None,
-        ) as conn:
-            for key, cmd in commands.items():
-                result = await conn.run(cmd, check=False)
-                results[key] = result.stdout
-        logger.debug("metrics_collected_via_ssh", device_id=device.id, device_name=device.name)
-    except (asyncssh.Error, OSError, asyncio.TimeoutError) as e:
-        # asyncssh.Error: auth / key-exchange / channel failures
-        # OSError: connection refused, host unreachable, DNS failure
-        # asyncio.TimeoutError: connection or command timed out
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            data = response.json()
+    except httpx.HTTPStatusError as e:
         logger.error(
-            "metrics_ssh_error",
+            "metrics_http_status_error",
             device_id=device.id,
             device_name=device.name,
+            url=url,
+            status_code=e.response.status_code,
+            error=str(e),
+        )
+        return None
+    except (httpx.HTTPError, httpx.TimeoutException, OSError) as e:
+        # httpx.HTTPError: network/connection errors
+        # httpx.TimeoutException: connect or read timeout
+        # OSError: host unreachable, DNS failure
+        logger.error(
+            "metrics_http_error",
+            device_id=device.id,
+            device_name=device.name,
+            url=url,
             error=str(e),
             error_type=type(e).__name__,
         )
         return None
 
-    cpu_percent = round(parse_top_output(results.get("top", "")), 2)
-    memory_percent = round(parse_free_output(results.get("free", "")), 2)
-    disk_percent = round(parse_df_output(results.get("df", "")), 2)
-    network_io = parse_netdev_output(results.get("netdev", ""))
-    temp_cpu = round(parse_temp_output(results.get("temp", "")), 2)
+    logger.debug("metrics_collected_via_http", device_id=device.id, device_name=device.name)
+
+    # Map client JSON → snapshot fields
+    network = data.get("network", {})
+    rx_mb = network.get("bytes_recv_mb", 0.0)
+    tx_mb = network.get("bytes_sent_mb", 0.0)
+
+    temperatures = data.get("temperatures", {})
+    temp_cpu = _find_cpu_temperature(temperatures)
 
     collected_at = datetime.now(timezone.utc)
 
     return {
-        "cpu_percent": cpu_percent,
-        "memory_percent": memory_percent,
-        "disk_percent": disk_percent,
-        "network_io": network_io,
+        "cpu_percent": round(float(data.get("cpu", {}).get("percent", 0.0)), 2),
+        "memory_percent": round(float(data.get("memory", {}).get("percent", 0.0)), 2),
+        "disk_percent": round(float(data.get("disk", {}).get("percent", 0.0)), 2),
+        "network_io": {
+            "rx_bytes": round(rx_mb * 1024 * 1024),
+            "tx_bytes": round(tx_mb * 1024 * 1024),
+        },
         "temperature": {"cpu": temp_cpu, "ambient": None},
-        "raw_json": results,
+        "raw_json": data,
         "collected_at": collected_at,
     }
 

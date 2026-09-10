@@ -49,6 +49,7 @@ class DeviceCreate(BaseModel):
     customer_id: Optional[str] = None
     mac_address: Optional[str] = None
     ip_address: Optional[str] = None
+    api_base_url: Optional[str] = None
     ssh_host: Optional[str] = None
     ssh_port: int = 22
     ssh_user: Optional[str] = None
@@ -64,6 +65,7 @@ class DeviceUpdate(BaseModel):
     customer_id: Optional[str] = None
     mac_address: Optional[str] = None
     ip_address: Optional[str] = None
+    api_base_url: Optional[str] = None
     ssh_host: Optional[str] = None
     ssh_port: Optional[int] = None
     ssh_user: Optional[str] = None
@@ -84,6 +86,7 @@ class DeviceResponse(BaseModel):
     current_version: Optional[str] = None
     current_git_hash: Optional[str] = None
     ip_address: Optional[str] = None
+    api_base_url: Optional[str] = None
     ssh_host: Optional[str] = None
     ssh_port: int
     ssh_user: Optional[str] = None
@@ -108,5 +111,6 @@ class DeviceListResponse(BaseModel):
     mac_address: Optional[str] = None
     current_version: Optional[str] = None
     ip_address: Optional[str] = None
+    api_base_url: Optional[str] = None
     status: str
     last_seen_at: Optional[datetime] = None

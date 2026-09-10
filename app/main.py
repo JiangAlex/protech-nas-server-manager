@@ -66,6 +66,7 @@ from app.routers.ota_esp32 import router as ota_esp32_router  # noqa: E402
 from app.routers.ota_batch import router as ota_batch_router  # noqa: E402
 from app.routers.web import router as web_router  # noqa: E402
 from app.routers.metrics import router as metrics_router  # noqa: E402
+from app.routers.dashboard import router as dashboard_router  # noqa: E402
 
 app.include_router(device_types_router)
 app.include_router(devices_router)
@@ -75,6 +76,7 @@ app.include_router(ota_esp32_router)
 app.include_router(ota_batch_router)
 app.include_router(web_router)
 app.include_router(metrics_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/health")

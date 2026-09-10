@@ -4,11 +4,6 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.metrics_service import (
-    parse_top_output,
-    parse_free_output,
-    parse_df_output,
-    parse_netdev_output,
-    parse_temp_output,
     collect_device_metrics,
     save_metrics_snapshot,
     get_latest_metrics,
@@ -16,77 +11,16 @@ from app.services.metrics_service import (
 )
 
 
-# ── Parse function tests ─────────────────────────────────────────────────────
-
-
-class TestParseTopOutput:
-    def test_idle(self):
-        raw = "Cpu(s):  0.0%us,  0.0%sy,  0.0%ni,100.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st"
-        assert parse_top_output(raw) == 0.0
-
-    def test_busy(self):
-        raw = "Cpu(s): 25.0%us,  5.0%sy,  0.0%ni, 70.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st"
-        assert parse_top_output(raw) == 30.0
-
-    def test_no_match(self):
-        assert parse_top_output("") == 0.0
-        assert parse_top_output("not cpu output") == 0.0
-
-
-class TestParseFreeOutput:
-    def test_normal(self):
-        # Mem: total used free shared buff/cache available
-        raw = "Mem:        8050844     123456     500000        980      7426388     6543210"
-        result = parse_free_output(raw)
-        assert 0.0 <= result <= 100.0
-
-    def test_no_match(self):
-        assert parse_free_output("") == 0.0
-        assert parse_free_output("not free output") == 0.0
-
-
-class TestParseDfOutput:
-    def test_normal(self):
-        raw = "/dev/root      29378604  12345678  15432926  45% /"
-        assert parse_df_output(raw) == 45.0
-
-    def test_no_match(self):
-        assert parse_df_output("") == 0.0
-
-
-class TestParseNetdevOutput:
-    def test_normal(self):
-        raw = "eth0: 12345678  54321   0    0    0     0     0     0  987654  12345"
-        result = parse_netdev_output(raw)
-        assert result == {"rx_bytes": 12345678, "tx_bytes": 987654}
-
-    def test_no_match(self):
-        assert parse_netdev_output("") == {"rx_bytes": 0, "tx_bytes": 0}
-        assert parse_netdev_output("no eth0 here") == {"rx_bytes": 0, "tx_bytes": 0}
-
-
-class TestParseTempOutput:
-    def test_valid(self):
-        assert parse_temp_output("45000") == 45.0
-        assert parse_temp_output("38000") == 38.0
-
-    def test_invalid(self):
-        assert parse_temp_output("") == 0.0
-        assert parse_temp_output("not_a_number") == 0.0
-
-
-# ── collect_device_metrics tests ─────────────────────────────────────────────
+# ── collect_device_metrics tests (HTTP/httpx) ─────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_collect_device_metrics_no_ssh_config():
-    """Device without ssh_host/ip or ssh_user returns None without connecting."""
+async def test_collect_device_metrics_no_api_base_url():
+    """Device without api_base_url returns None without making any HTTP request."""
     device = MagicMock()
     device.id = 1
     device.name = "test-device"
-    device.ssh_host = None
-    device.ip_address = None
-    device.ssh_user = None
+    device.api_base_url = None
 
     result = await collect_device_metrics(device)
     assert result is None
@@ -94,28 +28,31 @@ async def test_collect_device_metrics_no_ssh_config():
 
 @pytest.mark.asyncio
 async def test_collect_device_metrics_success():
-    """Successfully collect metrics when SSH returns valid output."""
+    """Successfully collect metrics when HTTP endpoint returns valid JSON."""
     device = MagicMock()
     device.id = 1
     device.name = "test-device"
-    device.ssh_host = "192.168.1.100"
-    device.ip_address = "192.168.1.100"
-    device.ssh_port = 22
-    device.ssh_user = "admin"
+    device.api_base_url = "http://192.168.1.100:8000"
 
-    mock_conn = AsyncMock()
-    mock_conn.run = AsyncMock(
-        side_effect=[
-            MagicMock(stdout="Cpu(s):  0.0%us,  0.0%sy,  0.0%ni,100.0%id,  0.0%wa\n"),
-            MagicMock(stdout="Mem:        8050844     123456     500000        980      7426388     6543210\n"),
-            MagicMock(stdout="/dev/root      29378604  12345678  15432926  45% /\n"),
-            MagicMock(stdout="eth0: 12345678  54321   0    0    0     0     0     0  987654  12345\n"),
-            MagicMock(stdout="45000\n"),
-        ]
-    )
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "cpu": {"percent": 25.0},
+        "memory": {"percent": 60.0},
+        "disk": {"percent": 45.0},
+        "network": {"bytes_recv_mb": 1.5, "bytes_sent_mb": 0.5},
+        "temperatures": {
+            "cpu_thermal_zone": {"current": 45000},
+            "ambient": {"current": 32000},
+        },
+    }
 
-    with patch("app.services.metrics_service.asyncssh.connect", new_callable=AsyncMock) as mock_connect:
-        mock_connect.return_value.__aenter__.return_value = mock_conn
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    mock_client.get.return_value = mock_response
+
+    with patch("app.services.metrics_service.httpx.AsyncClient", return_value=mock_client):
         result = await collect_device_metrics(device)
 
     assert result is not None
@@ -125,32 +62,81 @@ async def test_collect_device_metrics_success():
     assert "network_io" in result
     assert "temperature" in result
     assert "collected_at" in result
-    # CPU should be ~0% from idle output
-    assert result["cpu_percent"] == 0.0
-    # Disk should be 45%
+    assert result["cpu_percent"] == 25.0
+    assert result["memory_percent"] == 60.0
     assert result["disk_percent"] == 45.0
-    # Network
-    assert result["network_io"]["rx_bytes"] == 12345678
-    assert result["network_io"]["tx_bytes"] == 987654
-    # Temperature
+    # network_io stores bytes (converted from MB)
+    assert result["network_io"]["rx_bytes"] == round(1.5 * 1024 * 1024)
+    assert result["network_io"]["tx_bytes"] == round(0.5 * 1024 * 1024)
+    # Temperature — cpu label matches first
     assert result["temperature"]["cpu"] == 45.0
 
 
 @pytest.mark.asyncio
-async def test_collect_device_metrics_ssh_error():
-    """SSH connection failure returns None and logs error."""
-    import asyncssh
+async def test_collect_device_metrics_http_status_error():
+    """HTTP 4xx/5xx response returns None and logs error."""
+    import httpx
 
     device = MagicMock()
     device.id = 1
     device.name = "test-device"
-    device.ssh_host = "192.168.1.100"
-    device.ip_address = "192.168.1.100"
-    device.ssh_port = 22
-    device.ssh_user = "admin"
+    device.api_base_url = "http://192.168.1.100:8000"
 
-    with patch("app.services.metrics_service.asyncssh.connect", new_callable=AsyncMock) as mock_connect:
-        mock_connect.return_value.__aenter__.side_effect = asyncssh.Error(1, "connection refused")
+    mock_response = MagicMock()
+    mock_response.status_code = 502
+    mock_response.json.return_value = {}
+    error_response = httpx.HTTPStatusError(
+        "Bad Gateway",
+        request=MagicMock(),
+        response=mock_response,
+    )
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    mock_client.get.side_effect = error_response
+
+    with patch("app.services.metrics_service.httpx.AsyncClient", return_value=mock_client):
+        result = await collect_device_metrics(device)
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_collect_device_metrics_timeout():
+    """httpx.TimeoutException returns None and logs error."""
+    import httpx
+
+    device = MagicMock()
+    device.id = 1
+    device.name = "test-device"
+    device.api_base_url = "http://192.168.1.100:8000"
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    mock_client.get.side_effect = httpx.TimeoutException("Connection timeout")
+
+    with patch("app.services.metrics_service.httpx.AsyncClient", return_value=mock_client):
+        result = await collect_device_metrics(device)
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_collect_device_metrics_network_error():
+    """OS-level network error (host unreachable, DNS) returns None."""
+    device = MagicMock()
+    device.id = 1
+    device.name = "test-device"
+    device.api_base_url = "http://192.168.1.100:8000"
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    mock_client.get.side_effect = OSError("Network is unreachable")
+
+    with patch("app.services.metrics_service.httpx.AsyncClient", return_value=mock_client):
         result = await collect_device_metrics(device)
 
     assert result is None

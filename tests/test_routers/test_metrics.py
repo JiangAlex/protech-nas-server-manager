@@ -21,6 +21,7 @@ async def _create_device(client: AsyncClient, device_type_id: int, **overrides) 
         "ssh_host": "192.168.1.10",
         "ssh_user": "admin",
         "ssh_port": 22,
+        "api_base_url": "http://192.168.1.10:8000",
     }
     payload.update(overrides)
     resp = await client.post("/api/devices", json=payload)
@@ -74,15 +75,15 @@ async def test_refresh_metrics_not_found(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_refresh_metrics_no_ssh_config(client: AsyncClient):
-    """POST refresh returns 400 when the device has no SSH configuration."""
+async def test_refresh_metrics_no_api_base_url(client: AsyncClient):
+    """POST refresh returns 400 when the device has no api_base_url configured."""
     dt_id = await _create_device_type(client)
     device = await _create_device(
-        client, dt_id, name="No-SSH-DUT", ssh_host=None, ssh_user=None, ip_address=None
+        client, dt_id, name="No-API-DUT", api_base_url=None
     )
     resp = await client.post(f"/api/devices/{device['id']}/metrics/refresh")
     assert resp.status_code == 400
-    assert "SSH configuration" in resp.json()["detail"]
+    assert "api_base_url" in resp.json()["detail"]
 
 
 @pytest.mark.asyncio

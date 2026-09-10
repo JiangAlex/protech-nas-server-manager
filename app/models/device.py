@@ -55,6 +55,9 @@ class Device(Base, TimestampMixin):
 
     # Connection info
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    api_base_url: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, comment="Base URL for the device's own API (e.g. http://192.168.1.100:8080)"
+    )
     ssh_host: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     ssh_port: Mapped[int] = mapped_column(Integer, default=22, nullable=False)
     ssh_user: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)

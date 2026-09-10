@@ -99,7 +99,7 @@ async def refresh_device_metrics(
     device_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    """Collect metrics from the device in real time via SSH, persist, and return.
+    """Collect metrics from the device in real time via HTTP, persist, and return.
 
     Unlike ``GET /metrics`` (which only reads the latest stored snapshot),
     this endpoint connects to the device on demand so the "health check"
@@ -108,10 +108,10 @@ async def refresh_device_metrics(
     """
     device = await _get_device_or_404(db, device_id)
 
-    if not (device.ssh_host or device.ip_address) or not device.ssh_user:
+    if not device.api_base_url:
         raise HTTPException(
             status_code=400,
-            detail="Device has no SSH configuration (ssh_host/ip_address and ssh_user required)",
+            detail="Device has no api_base_url configured",
         )
 
     try:
@@ -123,7 +123,7 @@ async def refresh_device_metrics(
     if metrics is None:
         raise HTTPException(
             status_code=502,
-            detail="Failed to collect metrics from device via SSH",
+            detail="Failed to collect metrics from device",
         )
 
     try:
