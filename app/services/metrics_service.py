@@ -100,8 +100,6 @@ async def collect_device_metrics(device: Device) -> dict[str, Any] | None:
             port=device.ssh_port,
             username=device.ssh_user,
             known_hosts=None,
-            server_host_key_algs=["ssh-rsa", "rsa-sha2-256", "rsa-sha2-512"],
-            client_host_key_algs=["ssh-rsa", "rsa-sha2-256", "rsa-sha2-512"],
         ) as conn:
             for key, cmd in commands.items():
                 result = await conn.run(cmd, check=False)
