@@ -242,18 +242,28 @@ async function deleteDevice(id) {
     }
 }
 
-// Health check
+// Health check — collect live metrics via the refresh endpoint
 document.getElementById('health-check-btn').addEventListener('click', async () => {
     const btn = document.getElementById('health-check-btn');
     btn.disabled = true;
     btn.textContent = '⏳ 檢查中...';
     try {
-        const res = await fetch(`/api/devices/{{ device.id }}/health-check`, { method: 'POST' });
+        const res = await fetch(`/api/devices/{{ device.id }}/metrics/refresh`, { method: 'POST' });
         const data = await res.json();
-        if (data.status === 'online') {
-            alert(`🟢 在線\n方法: ${data.method}\n延遲: ${data.latency_ms} ms\n${data.message}`);
+        if (res.ok) {
+            const collected = data.collected_at ? new Date(data.collected_at).toLocaleString() : '-';
+            const tempCpu = (data.temperature && data.temperature.cpu != null) ? `${data.temperature.cpu} °C` : '-';
+            alert(
+                `🩺 健康檢查\n` +
+                `CPU: ${data.cpu_percent}%\n` +
+                `記憶體: ${data.memory_percent}%\n` +
+                `磁碟: ${data.disk_percent}%\n` +
+                `CPU 溫度: ${tempCpu}\n` +
+                `收集時間: ${collected}`
+            );
         } else {
-            alert(`🔴 離線\n方法: ${data.method}\n${data.message}`);
+            // 400 = 未設定 SSH；502 = SSH 收集失敗；其他 = 一般錯誤
+            alert(`🔴 健康檢查失敗\n${data.detail || res.statusText}`);
         }
     } catch (e) {
         alert('健康檢查請求失敗: ' + e.message);
