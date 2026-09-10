@@ -107,8 +107,17 @@ async def collect_device_metrics(device: Device) -> dict[str, Any] | None:
                 result = await conn.run(cmd, check=False)
                 results[key] = result.stdout
         logger.debug("metrics_collected_via_ssh", device_id=device.id, device_name=device.name)
-    except asyncssh.Error as e:
-        logger.error("metrics_ssh_error", device_id=device.id, device_name=device.name, error=str(e))
+    except (asyncssh.Error, OSError, asyncio.TimeoutError) as e:
+        # asyncssh.Error: auth / key-exchange / channel failures
+        # OSError: connection refused, host unreachable, DNS failure
+        # asyncio.TimeoutError: connection or command timed out
+        logger.error(
+            "metrics_ssh_error",
+            device_id=device.id,
+            device_name=device.name,
+            error=str(e),
+            error_type=type(e).__name__,
+        )
         return None
 
     cpu_percent = round(parse_top_output(results.get("top", "")), 2)

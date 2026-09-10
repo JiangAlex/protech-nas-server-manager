@@ -8,6 +8,7 @@
 from datetime import datetime
 from typing import Optional
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
@@ -61,6 +62,8 @@ class MetricsOverviewResponse(BaseModel):
 
 router = APIRouter(tags=["metrics"])
 
+logger = structlog.get_logger()
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -111,15 +114,25 @@ async def refresh_device_metrics(
             detail="Device has no SSH configuration (ssh_host/ip_address and ssh_user required)",
         )
 
-    metrics = await metrics_service.collect_device_metrics(device)
+    try:
+        metrics = await metrics_service.collect_device_metrics(device)
+    except Exception:
+        logger.exception("metrics_refresh_collect_failed", device_id=device_id)
+        raise HTTPException(status_code=502, detail="Failed to collect metrics from device")
+
     if metrics is None:
         raise HTTPException(
             status_code=502,
             detail="Failed to collect metrics from device via SSH",
         )
 
-    snapshot = await metrics_service.save_metrics_snapshot(db, device_id, metrics)
-    await db.flush()
+    try:
+        snapshot = await metrics_service.save_metrics_snapshot(db, device_id, metrics)
+        await db.flush()
+    except Exception:
+        logger.exception("metrics_refresh_save_failed", device_id=device_id)
+        raise HTTPException(status_code=500, detail="Failed to persist metrics snapshot")
+
     return snapshot
 
 
