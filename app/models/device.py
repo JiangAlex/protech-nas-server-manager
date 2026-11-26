@@ -73,6 +73,16 @@ class Device(Base, TimestampMixin):
     deploy_mode: Mapped[str] = mapped_column(String(20), default="systemd", nullable=False)
     config: Mapped[Optional[dict]] = mapped_column(JSONB, default=dict)
 
+    # Device token (X-Device-Token). Only the SHA-256 is stored; the token is shown to the device once.
+    token_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    token_issued_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    token_last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    token_last_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+
+    @property
+    def has_device_token(self) -> bool:
+        return bool(self.token_hash)
+
     # Relationships
     device_type: Mapped["DeviceType"] = relationship("DeviceType", back_populates="devices")
     update_logs: Mapped[list] = relationship("UpdateLog", back_populates="device")

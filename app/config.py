@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = "change-me-in-production"
     session_secret_key: str = "change-this-to-a-random-secret-key"
+    # X-API-Key for scripts calling the admin API (empty = only the web login session is accepted)
+    admin_api_key: str = ""
+    # /docs, /redoc and /openapi.json (off by default: the server is reachable from the internet)
+    enable_api_docs: bool = False
+    # Device tokens (X-Device-Token) on the device endpoints. False = transition: a missing token is
+    # logged and allowed; a wrong token is always rejected. True = a missing token is rejected too.
+    device_token_enforce: bool = False
 
     # Database
     database_url: str = "postgresql+asyncpg://nas_user:nas_password@localhost:5432/nas_manager"

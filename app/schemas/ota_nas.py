@@ -19,6 +19,8 @@ class NASCheckRequest(BaseModel):
     current_git_hash: Optional[str] = None
     mac_address: Optional[str] = None
     deploy_mode: str = "systemd"
+    # Ask for a device token (sent once in NASCheckResponse.device_token; see device_auth_service)
+    request_token: bool = False
 
 
 class NASCheckResponse(BaseModel):
@@ -31,6 +33,8 @@ class NASCheckResponse(BaseModel):
     download_url: Optional[str] = None
     frontend_artifact_url: Optional[str] = None
     released_at: Optional[datetime] = None
+    # Only in the response that enrolled the device: keep it and send it as X-Device-Token
+    device_token: Optional[str] = None
 
 
 # ── Download info ───────────────────────────────────────────

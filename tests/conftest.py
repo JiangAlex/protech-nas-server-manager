@@ -4,8 +4,13 @@ Uses in-memory SQLite. Models use JSONB from app.models.base which
 is a cross-DB TypeDecorator (TEXT on SQLite, JSONB on PostgreSQL).
 """
 
+import os
 from collections.abc import AsyncGenerator
 from unittest.mock import patch
+
+# The admin API needs a login session or X-API-Key (app/auth.py). Set before the app is imported.
+TEST_ADMIN_API_KEY = "test-admin-api-key"
+os.environ.setdefault("ADMIN_API_KEY", TEST_ADMIN_API_KEY)
 
 import pytest
 import pytest_asyncio
@@ -49,10 +54,7 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 
 # ── App client ───────────────────────────────────────────────
 
-@pytest_asyncio.fixture
-async def client(db_session) -> AsyncGenerator[AsyncClient, None]:
-    """Async HTTP client that calls the FastAPI app with a test DB session."""
-
+async def _make_client(db_session, headers: dict) -> AsyncGenerator[AsyncClient, None]:
     async def override_get_db():
         yield db_session
 
@@ -64,7 +66,22 @@ async def client(db_session) -> AsyncGenerator[AsyncClient, None]:
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://testserver",
+            headers=headers,
         ) as ac:
             yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def client(db_session) -> AsyncGenerator[AsyncClient, None]:
+    """Async HTTP client with the admin X-API-Key (admin API allowed)."""
+    async for ac in _make_client(db_session, {"X-API-Key": TEST_ADMIN_API_KEY}):
+        yield ac
+
+
+@pytest_asyncio.fixture
+async def anon_client(db_session) -> AsyncGenerator[AsyncClient, None]:
+    """Async HTTP client without credentials (like a device or a stranger on the internet)."""
+    async for ac in _make_client(db_session, {}):
+        yield ac

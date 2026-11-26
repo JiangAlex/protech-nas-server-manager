@@ -6,19 +6,23 @@
 - PUT    /api/devices/{id}               - Update device config
 - DELETE /api/devices/{id}               - Remove device (soft delete)
 - POST   /api/devices/{id}/health-check  - On-demand health check
+- GET    /api/devices/{id}/auth-events   - Device token audit log (newest first)
+- POST   /api/devices/{id}/token/reset   - Forget the device token; the device enrolls again on its next check
 """
 
 import asyncio
 import socket
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas import DeviceCreate, DeviceListResponse, DeviceResponse, DeviceUpdate
-from app.services import device_service
+from app.auth import require_admin
+from app.models.device import Device
+from app.schemas import DeviceAuthEventResponse, DeviceCreate, DeviceListResponse, DeviceResponse, DeviceUpdate
+from app.services import device_auth_service, device_service
 
 
 class HealthCheckResponse(BaseModel):
@@ -146,3 +150,35 @@ async def health_check_device(device_id: int, db: AsyncSession = Depends(get_db)
             latency_ms=0.0,
             message=f"Connection failed: {e}",
         )
+
+
+@router.get("/{device_id}/auth-events", response_model=list[DeviceAuthEventResponse])
+async def list_auth_events(
+    device_id: int,
+    limit: int = Query(100, ge=1, le=1000),
+    db: AsyncSession = Depends(get_db),
+):
+    """Device token audit log: enrollments, wrong or missing tokens, refused enrollments, resets."""
+    if not await db.get(Device, device_id):
+        raise HTTPException(status_code=404, detail="Device not found")
+    return await device_auth_service.list_events(db, device_id, limit)
+
+
+@router.post("/{device_id}/token/reset", response_model=DeviceResponse)
+async def reset_device_token(
+    device_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    admin: str = Depends(require_admin),
+):
+    """Forget the device token. The device gets a new one on its next check with request_token.
+
+    Use it when a device was replaced or reinstalled, or when the token may have leaked.
+    """
+    device = await db.get(Device, device_id)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    await device_auth_service.reset_token(db, request, device, admin)
+    await db.flush()
+    await db.refresh(device)
+    return device

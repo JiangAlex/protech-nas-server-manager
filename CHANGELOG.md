@@ -8,6 +8,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+- 管理 API(/api/devices、/api/device-types、/api/firmware、/api/ota/batch、/api/dashboard、metrics、artifact 上傳)需要網頁登入的 session 或 X-API-Key(ADMIN_API_KEY),否則 401
+- /docs、/redoc、/openapi.json 預設關閉(ENABLE_API_DOCS)
+- 裝置 token:NAS check 帶 request_token 時自動發放(只發一次,只存 SHA-256),之後以 X-Device-Token 驗證 check / download / report;錯誤 token 一律 401;已有 token 的裝置不能從網路重新登錄;有登記 MAC 時要相符才發放;沒有有效 token 的請求不能改 MAC;DEVICE_TOKEN_ENFORCE=true 後沒帶 token 也拒絕
+- 驗證記錄表 device_auth_events(migration 006):發放、錯誤、未帶、拒絕發放、拒絕改 MAC、新 IP、管理員重設、未知裝置;API GET /api/devices/{id}/auth-events,設備詳情頁顯示並可重設 token(POST /api/devices/{id}/token/reset)
+- 啟動時偵測預設的 SESSION_SECRET_KEY / ADMIN_PASSWORD 並記錄錯誤
+
 ### Added
 - 韌體版本管理 API + Web 頁面
   - `GET /api/firmware` — 列出所有韌體版本（支援 device_type_id 篩選）

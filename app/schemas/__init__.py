@@ -97,6 +97,25 @@ class DeviceResponse(BaseModel):
     config: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
+    # Device token status (the token itself is never returned here)
+    has_device_token: bool = False
+    token_issued_at: Optional[datetime] = None
+    token_last_used_at: Optional[datetime] = None
+    token_last_ip: Optional[str] = None
+
+
+class DeviceAuthEventResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    device_id: Optional[int] = None
+    created_at: datetime
+    event: str
+    endpoint: Optional[str] = None
+    ip: Optional[str] = None
+    mac: Optional[str] = None
+    user_agent: Optional[str] = None
+    detail: Optional[str] = None
 
 
 class DeviceListResponse(BaseModel):

@@ -21,19 +21,37 @@ from app.schemas.ota_nas import (
     NASReportRequest,
     NASReportResponse,
 )
-from app.services import artifact_service
+from fastapi import Request
+
+from app.services import artifact_service, device_auth_service
 
 logger = structlog.get_logger()
 
 
-async def check_update(db: AsyncSession, request: NASCheckRequest) -> NASCheckResponse:
-    """Check if an update is available for the NAS device."""
+async def check_update(
+    db: AsyncSession, request: NASCheckRequest, http: Optional[Request] = None
+) -> NASCheckResponse:
+    """Check if an update is available for the NAS device.
+
+    `http` is the HTTP request (headers, client IP) for the device token; see device_auth_service.
+    """
 
     device = await db.get(Device, request.device_id)
     if not device:
+        if http is not None:
+            await device_auth_service.log_event(
+                db, http, None, "unknown_device", "check", request.mac_address,
+                f"device_id {request.device_id}",
+            )
         return NASCheckResponse(
             update_available=False,
             current_version=request.current_version,
+        )
+
+    auth = device_auth_service.AuthResult(authenticated=False)
+    if http is not None:
+        auth = await device_auth_service.authenticate(
+            db, http, device, "check", request_token=request.request_token, mac=request.mac_address
         )
 
     # Update device status
@@ -45,8 +63,18 @@ async def check_update(db: AsyncSession, request: NASCheckRequest) -> NASCheckRe
         device.current_git_hash = request.current_git_hash
     if request.deploy_mode:
         device.deploy_mode = request.deploy_mode
-    if request.mac_address:
+    if http is not None:
+        await device_auth_service.apply_mac(db, http, device, request.mac_address, auth, "check")
+    elif request.mac_address:
         device.mac_address = request.mac_address
+
+    response = await _check_response(db, request, device)
+    response.device_token = auth.issued_token
+    return response
+
+
+async def _check_response(db: AsyncSession, request: NASCheckRequest, device: Device) -> NASCheckResponse:
+    """Compare the device with the latest stable firmware of its type."""
 
     # Find latest stable firmware for this device type
     result = await db.execute(

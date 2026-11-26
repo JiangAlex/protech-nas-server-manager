@@ -2,6 +2,7 @@
 
 from app.models.base import Base, TimestampMixin
 from app.models.device import Device, DeviceType
+from app.models.device_auth_event import DeviceAuthEvent
 from app.models.firmware import FirmwareVersion
 from app.models.metrics_snapshot import MetricsSnapshot
 from app.models.notification import NotificationConfig
@@ -12,6 +13,7 @@ __all__ = [
     "TimestampMixin",
     "Device",
     "DeviceType",
+    "DeviceAuthEvent",
     "FirmwareVersion",
     "MetricsSnapshot",
     "NotificationConfig",

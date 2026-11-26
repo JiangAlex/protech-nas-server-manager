@@ -7,7 +7,7 @@ manages lifespan events (DB connection, scheduler startup/shutdown).
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -33,6 +33,15 @@ async def lifespan(app: FastAPI):
         logger.error("database_connection_failed", error=str(e))
         raise
 
+    # Known defaults from config.py are public (the repository is on GitHub): anyone could sign a
+    # session cookie with the default secret, or log in with the default password
+    if settings.session_secret_key == "change-this-to-a-random-secret-key":
+        logger.error("insecure_default_session_secret", hint="set SESSION_SECRET_KEY in .env")
+    if settings.admin_password == "change-me-in-production":
+        logger.error("insecure_default_admin_password", hint="set ADMIN_PASSWORD in .env")
+    if not settings.device_token_enforce:
+        logger.warning("device_token_transition_mode", hint="DEVICE_TOKEN_ENFORCE=true once all devices have tokens")
+
     # Start scheduler
     start_scheduler()
 
@@ -49,6 +58,10 @@ app = FastAPI(
     description="管理多台 Protech NAS 設備的軟體版本、推送更新、監控狀態",
     version="0.1.0",
     lifespan=lifespan,
+    # The server is reachable from the internet: no public API description unless ENABLE_API_DOCS=true
+    docs_url="/docs" if settings.enable_api_docs else None,
+    redoc_url="/redoc" if settings.enable_api_docs else None,
+    openapi_url="/openapi.json" if settings.enable_api_docs else None,
 )
 
 # Session middleware for web admin auth
@@ -67,16 +80,21 @@ from app.routers.ota_batch import router as ota_batch_router  # noqa: E402
 from app.routers.web import router as web_router  # noqa: E402
 from app.routers.metrics import router as metrics_router  # noqa: E402
 from app.routers.dashboard import router as dashboard_router  # noqa: E402
+from app.auth import require_admin  # noqa: E402
 
-app.include_router(device_types_router)
-app.include_router(devices_router)
-app.include_router(firmware_router)
+# Admin API: web login session or X-API-Key (app/auth.py)
+admin_only = [Depends(require_admin)]
+app.include_router(device_types_router, dependencies=admin_only)
+app.include_router(devices_router, dependencies=admin_only)
+app.include_router(firmware_router, dependencies=admin_only)
+app.include_router(ota_batch_router, dependencies=admin_only)
+app.include_router(metrics_router, dependencies=admin_only)
+app.include_router(dashboard_router, dependencies=admin_only)
+# Device endpoints: per-device tokens (app/services/device_auth_service.py); ESP32 OTA is still a placeholder
 app.include_router(ota_nas_router)
 app.include_router(ota_esp32_router)
-app.include_router(ota_batch_router)
+# Web pages: their own login check (app/routers/web.py)
 app.include_router(web_router)
-app.include_router(metrics_router)
-app.include_router(dashboard_router)
 
 
 @app.get("/health")
