@@ -31,6 +31,8 @@ class FirmwareVersion(Base, TimestampMixin):
     file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     file_size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     file_checksum: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    # ESP32 firmware: base64 DER ECDSA P-256 signature over the SHA-256 of the .bin
+    file_signature: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     frontend_artifact_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     frontend_checksum: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 

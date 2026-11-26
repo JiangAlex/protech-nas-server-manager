@@ -113,12 +113,15 @@ async def authenticate(
     *,
     request_token: bool = False,
     mac: Optional[str] = None,
+    enforce: Optional[bool] = None,
 ) -> AuthResult:
     """Check the X-Device-Token of a request for `device`; enroll it when allowed.
 
-    Raises 401 for a wrong token, and for a missing one when DEVICE_TOKEN_ENFORCE is on.
+    Raises 401 for a wrong token, and for a missing one when enforcing: `enforce`, or
+    DEVICE_TOKEN_ENFORCE when it is None (endpoints with old clients use the transition setting).
     """
     settings = get_settings()
+    enforcing = settings.device_token_enforce if enforce is None else enforce
     presented = request.headers.get(TOKEN_HEADER, "").strip()
     now = datetime.now(timezone.utc)
     ip = client_ip(request)
@@ -135,11 +138,11 @@ async def authenticate(
             await log_event(db, request, device.id, "token_invalid", endpoint, mac)
             await _reject(db, "Invalid device token")
         await log_event(db, request, device.id, "token_missing", endpoint, mac,
-                        "enrolled device sent no token" + ("; rejected" if settings.device_token_enforce else ""))
+                        "enrolled device sent no token" + ("; rejected" if enforcing else ""))
         if request_token:
             await log_event(db, request, device.id, "enroll_rejected", endpoint, mac,
                             "device already has a token; an admin reset is needed for a new one")
-        if settings.device_token_enforce:
+        if enforcing:
             await _reject(db, "Device token required")
         return AuthResult(authenticated=False)
 
@@ -154,7 +157,7 @@ async def authenticate(
         if on_record and sent != on_record:
             await log_event(db, request, device.id, "enroll_rejected", endpoint, mac,
                             f"MAC {sent or '(none)'} does not match the MAC on record")
-            if settings.device_token_enforce:
+            if enforcing:
                 await _reject(db, "Device token required")
             return AuthResult(authenticated=False)
         token = secrets.token_urlsafe(32)
@@ -167,8 +170,8 @@ async def authenticate(
         return AuthResult(authenticated=False, issued_token=token)
 
     await log_event(db, request, device.id, "token_missing", endpoint, mac,
-                    "client did not ask for a token" + ("; rejected" if settings.device_token_enforce else ""))
-    if settings.device_token_enforce:
+                    "client did not ask for a token" + ("; rejected" if enforcing else ""))
+    if enforcing:
         await _reject(db, "Device token required")
     return AuthResult(authenticated=False)
 

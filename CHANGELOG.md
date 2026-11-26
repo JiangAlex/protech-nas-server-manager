@@ -8,6 +8,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — ESP32 OTA
+- `POST /api/firmware/{id}/binary`(管理 API):上傳 ESP32 的 firmware.bin 與簽章(base64 DER ECDSA P-256,簽在檔案的 SHA-256)。檢查 ESP 映像檔頭 0xE9、大小上限 FIRMWARE_MAX_SIZE(預設一個 OTA 分區 0x640000)、版本須為 x.y.z;設定 FIRMWARE_PUBLIC_KEY_FILE 時伺服器也驗簽。存於 artifacts/firmware/<device_type_id>/<version>.bin
+- `GET /api/ota/esp32/check?mac=&version=[&request_token=true]`:以 MAC 找設備(管理員先登記),版本以數字比較,只提供比設備新的版本(設備較新時不會被降版);回應含下載網址、大小、SHA-256、簽章
+- `GET /api/ota/esp32/firmware/{version}?mac=`、`POST /api/ota/esp32/report`(寫入更新記錄,completed 時更新設備版本)
+- ESP32 端點一律需要裝置 token(沒有過渡期),沿用 device_auth_service 與驗證記錄
+- migration 007:firmware_versions.file_signature
+
 ### Security
 - 管理 API(/api/devices、/api/device-types、/api/firmware、/api/ota/batch、/api/dashboard、metrics、artifact 上傳)需要網頁登入的 session 或 X-API-Key(ADMIN_API_KEY),否則 401
 - /docs、/redoc、/openapi.json 預設關閉(ENABLE_API_DOCS)

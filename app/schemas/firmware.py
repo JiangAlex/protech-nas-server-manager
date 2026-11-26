@@ -54,6 +54,7 @@ class FirmwareResponse(BaseModel):
     file_path: Optional[str] = None
     file_size: Optional[int] = None
     file_checksum: Optional[str] = None
+    file_signature: Optional[str] = None
     frontend_artifact_path: Optional[str] = None
     frontend_checksum: Optional[str] = None
     is_latest: bool

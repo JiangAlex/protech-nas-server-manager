@@ -7,16 +7,18 @@
 - DELETE /api/firmware/{id}          - Delete firmware version
 - POST   /api/firmware/{id}/latest   - Mark as latest
 - POST   /api/firmware/{id}/stable   - Mark as stable
+- POST   /api/firmware/{id}/binary   - Upload the ESP32 .bin and its signature
 """
 
+from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas.firmware import FirmwareCreate, FirmwareResponse, FirmwareUpdate
-from app.services import firmware_service
+from app.services import firmware_file_service, firmware_service
 
 router = APIRouter(prefix="/api/firmware", tags=["firmware"])
 
@@ -88,4 +90,30 @@ async def mark_as_stable(firmware_id: int, db: AsyncSession = Depends(get_db)):
     firmware = await firmware_service.mark_as_stable(db, firmware_id)
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware version not found")
+    return firmware
+
+
+@router.post("/{firmware_id}/binary", response_model=FirmwareResponse)
+async def upload_binary(
+    firmware_id: int,
+    file: UploadFile = File(..., description="ESP32 application image (firmware.bin)"),
+    signature: str = Form(..., description="base64 DER ECDSA P-256 signature over the SHA-256 of the file"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload the firmware binary of an ESP32 release (see app/services/firmware_file_service.py).
+
+    Replaces an earlier binary of the same record. The version must be "x.y.z".
+    """
+    firmware = await firmware_service.get_firmware(db, firmware_id)
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware version not found")
+    stored = await firmware_file_service.save_binary(firmware.device_type_id, firmware.version, file, signature)
+    firmware.file_path = stored.path
+    firmware.file_size = stored.size
+    firmware.file_checksum = stored.sha256
+    firmware.file_signature = signature.strip()
+    if firmware.released_at is None:
+        firmware.released_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(firmware)
     return firmware

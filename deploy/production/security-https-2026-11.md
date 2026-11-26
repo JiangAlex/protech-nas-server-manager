@@ -285,3 +285,30 @@ echo | openssl s_client -connect n8n.softsnail.com:443 -servername n8n.softsnail
 | 拒絕改 MAC(mac_change_ignored) | 沒有有效 token 卻想改 MAC | **可能有人冒用** |
 | 管理員重設(token_reset) | 管理頁按了重設 | |
 | 未知裝置(unknown_device) | 不存在的 device_id | 大量出現代表有人在掃 |
+
+---
+
+## D. ESP32 OTA(manager 端,commit 之後的版本)
+
+步驟同 A3 到 A5:
+
+```bash
+cd ~/Documents/GitHub/protech-nas-server-manager
+git pull --ff-only
+docker compose build app
+docker compose run --rm app alembic upgrade head      # 007 (head):firmware_versions.file_signature
+docker compose up -d app
+```
+
+選用:讓伺服器在上傳時就驗簽(發布流程出錯能及早發現)。公鑰放在 artifacts volume 裡:
+
+```bash
+docker cp fw_signing_pub.pem nas-manager-app:/app/data/artifacts/fw_signing_pub.pem
+echo 'FIRMWARE_PUBLIC_KEY_FILE=/app/data/artifacts/fw_signing_pub.pem' >> .env
+docker compose up -d app
+```
+
+登記 ESP32 設備(方式 a:管理員先建,板子第一次 check 才發 token):
+
+1. 設備類型:新增一個 ESP32 用的類型(例如 name `lcd2`、update_method `ota_http`)
+2. 設備:選這個類型,MAC 填板子的 Wi-Fi MAC(序列埠或燒錄時 esptool 顯示的 MAC)
