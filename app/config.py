@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     # signature does not verify is refused. The device always verifies the signature itself.
     firmware_public_key_file: str = ""
 
+    # Map tiles for the ESP32 boards (GET /api/tiles/...): this server asks the tile server for them, so
+    # a board away from home (phone hotspot) needs no access to the tile PC. Base URL of that tile
+    # server (~/osm-tiles/tile_server.py), for example http://100.82.234.117:8090 (Tailscale). Empty = off.
+    tile_upstream_url: str = ""
+    tile_upstream_timeout_seconds: int = 60   # a tile missing from the store is rendered on request
+    tile_max_concurrent: int = 4              # requests to the tile server at the same time
+
     # Database
     database_url: str = "postgresql+asyncpg://nas_user:nas_password@localhost:5432/nas_manager"
 

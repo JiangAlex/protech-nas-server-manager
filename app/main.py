@@ -76,6 +76,7 @@ from app.routers.devices import router as devices_router  # noqa: E402
 from app.routers.firmware import router as firmware_router  # noqa: E402
 from app.routers.ota_nas import router as ota_nas_router  # noqa: E402
 from app.routers.ota_esp32 import router as ota_esp32_router  # noqa: E402
+from app.routers.tiles import router as tiles_router  # noqa: E402
 from app.routers.ota_batch import router as ota_batch_router  # noqa: E402
 from app.routers.web import router as web_router  # noqa: E402
 from app.routers.metrics import router as metrics_router  # noqa: E402
@@ -93,6 +94,7 @@ app.include_router(dashboard_router, dependencies=admin_only)
 # Device endpoints: per-device tokens (app/services/device_auth_service.py); ESP32 OTA is still a placeholder
 app.include_router(ota_nas_router)
 app.include_router(ota_esp32_router)
+app.include_router(tiles_router)
 # Web pages: their own login check (app/routers/web.py)
 app.include_router(web_router)
 

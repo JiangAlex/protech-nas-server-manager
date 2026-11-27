@@ -312,3 +312,29 @@ docker compose up -d app
 
 1. 設備類型:新增一個 ESP32 用的類型(例如 name `lcd2`、update_method `ota_http`)
 2. 設備:選這個類型,MAC 填板子的 Wi-Fi MAC(序列埠或燒錄時 esptool 顯示的 MAC)
+
+## E. ESP32 地圖圖磚(manager 代理)
+
+板子在手機熱點上連不到圖磚 PC(`~/osm-tiles/tile_server.py` 只服務私人網段),所以改向 manager 要圖磚:
+`POST /api/tiles/plan` 與 `GET /api/tiles/{z}/{x}/{y}.bin`,都要 `X-Device-Token`(和 ESP32 OTA 相同的 token,不用另外申請),
+manager 再轉給圖磚伺服器,答案原樣送回。圖磚留在 PC,不用搬到 B400A。
+
+前提:B400A 連得到圖磚 PC 的 Tailscale 位址(2026-11-27 已在 `nas-manager-app` 容器內測過:`http://100.82.234.117:8090/status` 有回應),
+圖磚 PC 要開著,`osm-tile-server` 服務在跑。圖磚伺服器看到的來源是 B400A 的 Tailscale IP,在它放行的 100.64.0.0/10 內,PC 端不用改。
+
+```bash
+cd ~/Documents/GitHub/protech-nas-server-manager
+git pull --ff-only
+echo 'TILE_UPSTREAM_URL=http://100.82.234.117:8090' >> .env     # 沒設就回 503,功能關閉
+docker compose build app
+docker compose up -d app                                         # 沒有 migration
+```
+
+驗證(用板子的 token,不要把 token 貼到聊天):
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" "http://127.0.0.1:8060/api/tiles/16/54800/28060.bin?mac=28:84:85:87:e4:a0"   # 沒有 token: 401
+```
+
+關閉:把 `TILE_UPSTREAM_URL` 那行拿掉再 `docker compose up -d app`。圖磚 PC 關機時,板子的圖磚請求會得到 502,
+下載失敗並在 10 分鐘後重試;地圖與其他功能不受影響。限制:同時最多 4 個請求到圖磚 PC(`TILE_MAX_CONCURRENT`),逾時 60 秒(缺的圖磚要當場渲染)。
